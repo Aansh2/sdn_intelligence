@@ -1,0 +1,6 @@
+[extra1]
+Switches = 20
+Hosts = 5
+[extra2]
+Switches = 5
+Hosts = 15

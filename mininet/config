@@ -1,0 +1,8 @@
+[main]
+Ip = 172.17.0.2
+Distribution = equal
+MainSwitches = 20
+MainHosts = 0
+Datacenters = 2
+[extra1]
+[extra2]

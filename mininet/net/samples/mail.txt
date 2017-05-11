@@ -1,0 +1,25 @@
+MAIL FROM: <sender@sample.com>
+RCPT TO: <you@sample.com>
+DATA:
+
+Dear Hiring Manager,
+
+I read your job posting for the Store Manager position with interest.
+
+I can offer XYZ Company:
+
+- Over five years of retail management experience
+- Ability to effectively hire, train, and manage staff
+- Payroll management, scheduling, reports, and inventory
+- Extensive work with visual standards and merchandising high-ticket items
+
+In addition to my extensive retail experience, I have excellent communication skills. I always maintain a gracious and professional manner when communicating with people, including customers and store staff. My broad experience and range of skills make me a superior candidate for this position.
+
+My resume, which is below, provides additional information on my background and qualifications. I look forward to hearing from you as soon as possible to arrange time for an interview.
+
+Thank you for your consideration.
+
+Paul Jones
+
+\r\n.\r\n.
+QUIT

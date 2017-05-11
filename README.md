@@ -54,4 +54,4 @@ Hosts = y
 
 Where x is the number of switches you want in that extra network, and y is the number of hosts.
 
-Please remember to remove de opendaylight container (sudo docker rm opendaylight) after using it.
+Please remember to remove the opendaylight container (sudo docker rm opendaylight) after using it.

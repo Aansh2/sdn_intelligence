@@ -5,12 +5,11 @@ Once in the mininet CLI,
 
 Script execution:
 
-```
+```sh
 python random_general.py
 ```
 
-Configuration determined by config and repo_subnet files. Config must have a [Main] section 
-with the following attributes:
+Configuration is determined by **config** and **repo_subnets** files. Config must have a [main] section with the following attributes:
 
 - Ip: ip address of controller (you can check it using "docker inspect opendaylight")
 - Distribution: distribution of link bandwidth between hosts and network
@@ -22,8 +21,26 @@ with the following attributes:
 - Datacenters: "yes" if you want a datacenter connected to the core
 network. "No" otherwise.
 
-It also will have another section for each extra network; for example [extra1]
-This [extra1] will be defined in repo_subnet
+It also will have another section for each extra network.
 
-Please remember to remove de opendaylight container (sudo docker rm opendaylight)
-Next, I will comment more on the config and repo_subnets files
+### config example:
+[main]
+Ip = 172.17.0.2
+Distribution = equal
+MainSwitches = 20
+MainHosts = 0
+Datacenters = 2
+[extra1]
+[extra2]
+
+Those [extra1], [extra2] are networks attached to the main network, and are defined in **repo_subnets**,
+wich has the following structure:
+
+### repo_subnets example:
+[extran]
+Switches = x
+Hosts = y
+
+Where x is the number of switches you want in that extra network, and y is the number of hosts.
+
+Please remember to remove de opendaylight container (sudo docker rm opendaylight) after using it.

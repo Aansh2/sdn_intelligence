@@ -24,21 +24,32 @@ network. "No" otherwise.
 It also will have another section for each extra network.
 
 ### config example:
+
 [main]
+
 Ip = 172.17.0.2
+
 Distribution = equal
+
 MainSwitches = 20
+
 MainHosts = 0
+
 Datacenters = 2
+
 [extra1]
+
 [extra2]
 
 Those [extra1], [extra2] are networks attached to the main network, and are defined in **repo_subnets**,
 wich has the following structure:
 
 ### repo_subnets example:
+
 [extran]
+
 Switches = x
+
 Hosts = y
 
 Where x is the number of switches you want in that extra network, and y is the number of hosts.

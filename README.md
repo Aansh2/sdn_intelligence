@@ -18,7 +18,7 @@ Configuration is determined by **config** and **repo_subnets** files. Config mus
 
 - MainSwitches: number of switches in the core network
 - MainHosts: number of hosts directly connected to the core network
-- Datacenters: "yes" if you want a datacenter connected to the core
+- Datacenters: number of datacenters in the core network
 network. "No" otherwise.
 
 It also will have another section for each extra network.

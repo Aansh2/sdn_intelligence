@@ -129,6 +129,7 @@ def trim(topo):
 def create_traffic(net, datac, nm_ho):
 
 	for n in range(nm_ho):
+		time.sleep(1)
 		x = random.randint(0,6)
 		h = net.get('h{}'.format(n+1))
 		#DEBUGGING This is considering that we have 0 hosts in main network

@@ -1,3 +1,3 @@
 
-def send_report(err, host, server):
+def send_report(err, host, server, net):
 	return

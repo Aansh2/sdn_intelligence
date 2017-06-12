@@ -9,6 +9,8 @@ Script execution:
 python random_general.py
 ```
 
+To end its execution, press ctrl+c
+
 Configuration is determined by **config** and **repo_subnets** files. Config must have a [main] section with the following attributes:
 
 - Ip: ip address of controller (you can check it using "docker inspect opendaylight")

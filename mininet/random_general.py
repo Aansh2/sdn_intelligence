@@ -197,7 +197,7 @@ def create_error(err, nm_ho, datac, net):
 			net.host.stop(host_down)
 
 	#DEBUGGING
-	#random_errors.send_report(err, host, server)
+	#random_errors.send_report(err, host, server, net)
 	return
 
 def run(topo, ip="127.0.0.1"):
@@ -242,7 +242,7 @@ def run(topo, ip="127.0.0.1"):
 		time.sleep(10)
 		err = random.randint(1,5)
 		create_error(err, nm_ho, datac, net)
-		
+
 	#DEBUGGING
 	#CLI(net)
 

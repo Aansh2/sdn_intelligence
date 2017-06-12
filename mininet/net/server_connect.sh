@@ -1,3 +1,3 @@
 #!/bin/bash
 
-socat -u TCP:$1:5555 /dev/null
+watch -n 2 socat -u TCP:$1:5555 /dev/null

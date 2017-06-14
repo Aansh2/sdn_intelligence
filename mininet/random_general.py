@@ -204,6 +204,13 @@ def create_error(err, nm_ho, datac, net):
 		print 'switch whose flow has been modified: %s' % switch_flow.dpid
 		random_errors.change_flow(switch_flow.dpid)
 
+	elif err == 7:
+		print 'Error %d' % err
+		switches_list = net.switches
+		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
+		print 'switch whose meter has been added: %s' % switch_flow.dpid
+		random_errors.add_meter(switch_flow.dpid)
+
 	#DEBUGGING
 	#random_errors.send_report(err, host, server, net)
 	return
@@ -248,7 +255,7 @@ def run(topo, ip="127.0.0.1"):
 	print "Beginning test..."
 	while True:
 		time.sleep(10)
-		err = random.randint(1,6)
+		err = random.randint(1,7)
 		create_error(err, nm_ho, datac, net)
 
 	#DEBUGGING

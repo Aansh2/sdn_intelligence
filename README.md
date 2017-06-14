@@ -8,7 +8,7 @@ Script execution:
 ```sh
 python random_general.py
 ```
-
+Once running, it will create an error in the network every 10 seconds
 To end its execution, press ctrl+c
 
 Configuration is determined by **config** and **repo_subnets** files. Config must have a [main] section with the following attributes:

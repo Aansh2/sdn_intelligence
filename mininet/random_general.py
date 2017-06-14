@@ -247,7 +247,7 @@ def run(topo, ip="127.0.0.1"):
 		
 	print "Beginning test..."
 	while True:
-		time.sleep(30)
+		time.sleep(10)
 		err = random.randint(1,6)
 		create_error(err, nm_ho, datac, net)
 

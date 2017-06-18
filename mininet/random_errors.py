@@ -36,7 +36,7 @@ def change_flow(node):
 				resp2_xml = r2.read()
 				root2 = ET.fromstring(resp2_xml)
 
-				#DEBUGGING: ¿Change CONTROLLER TOO?
+				#DEBUGGING: Change CONTROLLER too?
 				for node in root2.iter('{urn:opendaylight:flow:inventory}output-node-connector'):
 					if node.text != 'CONTROLLER' and int(node.text) > 0:
 						node.text = str(int(node.text) - 1)

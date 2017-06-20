@@ -14,6 +14,11 @@ import random_scalefree
 import random_errors
 import ConfigParser
 import time
+import logging
+import json
+
+from os import makedirs, path
+from datetime import datetime, timedelta
 
 from mininet.topo import Topo
 from mininet.net import Mininet
@@ -153,10 +158,10 @@ def create_traffic(net, datac, nm_ho):
 	#DEBUGGING: leaving out broadcast
 	return
 
-def create_error(err, nm_ho, datac, net):
+def create_error(err, nm_ho, datac, net, sim_id, logger):
 
 	#DEBUGGING I'm supposing zero hosts in the main network
-	host = random.randint(datac*3+1, nm_ho+1)
+	host = random.randint(datac*3+1, nm_ho)
 	server = random.randint(1, datac*3)
 	ip_datac = '10.0.0.' + str(server)
 
@@ -167,12 +172,16 @@ def create_error(err, nm_ho, datac, net):
 			h = net.get('h{}'.format(host))
 			h.cmd('./net/streaming_client.sh ' + ip_datac + ' &')
 
+		random_errors.send_report(err, ['h{}'.format(host)], sim_id, logger)
+
 	elif err == 2:
 		print 'Error %d ' % err
 		for n in range(0, 20):
 			time.sleep(1)
-			print 'Error %d' % err
+			print 'Iteration %d' % n
 			create_traffic(net, datac, nm_ho)
+
+		random_errors.send_report(err, [], sim_id, logger)
 
 	elif err == 3:
 		print 'Error %d' % err
@@ -180,6 +189,8 @@ def create_error(err, nm_ho, datac, net):
 		link_down = links_list[random.randint(0, len(links_list)-1)]
 		print 'link down: %s - %s' % (link_down.intf1, link_down.intf2)
 		net.link.delete(link_down) 
+
+		random_errors.send_report(err, [str(link_down.intf1), str(link_down.intf2)], sim_id, logger)
 
 	elif err == 4:
 		print 'Error %d' % err
@@ -189,6 +200,8 @@ def create_error(err, nm_ho, datac, net):
 		#'True' if you want to delete the interfaces too (you wont be able to restart it!!)
 		net.switch.stop(switch_down, False)
 
+		random_errors.send_report(err, [str(int(switch_down.dpid, 16))], sim_id, logger)
+
 	elif err == 5:
 		if datac != 0:
 			print 'Error %d' % err
@@ -197,6 +210,9 @@ def create_error(err, nm_ho, datac, net):
 			print 'host down: pid: %s name: %s' % (host_down.pid, host_down.name)
 			net.host.stop(host_down)
 
+			#DEBUGGING: BEWARE, host pid or host name
+			random_errors.send_report(err, [host_down.name], sim_id, logger)
+
 	elif err == 6:
 		print 'Error %d' % err
 		switches_list = net.switches
@@ -204,25 +220,32 @@ def create_error(err, nm_ho, datac, net):
 		print 'switch whose flow has been modified: %s' % switch_flow.dpid
 		random_errors.change_flow(switch_flow.dpid)
 
+		random_errors.send_report(err, [str(int(switch_flow.dpid, 16))], sim_id, logger)
+
 	elif err == 7:
 		print 'Error %d' % err
 		switches_list = net.switches
 		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'switch whose meter has been added: %s' % switch_flow.dpid
-		random_errors.add_meter(switch_flow.dpid)
+		random_errors.add_meter(switch_flow.dpid, sim_id, logger)
 
 	elif err == 8:
 		print 'Error %d' % err
 		switches_list = net.switches
 		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'switch whose idle-timeouts have been modified: %s' % switch_flow.dpid
-		random_errors.change_idletimeout(switch_flow.dpid)
+		random_errors.change_idletimeout(switch_flow.dpid, sim_id, logger)
 
-	#DEBUGGING
-	#random_errors.send_report(err, host, server, net)
+	elif err == 9:
+		print 'Error %d' % err
+		switches_list = net.switches
+		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
+		print 'switch whose hard-timeouts have been modified: %s' % switch_flow.dpid
+		random_errors.change_hardtimeout(switch_flow.dpid, sim_id, logger)
+
 	return
 
-def run(topo, ip="127.0.0.1"):
+def run(topo, ip):
 
 	cont = RemoteController('c1', ip=ip, port = 6633)
 	net = Mininet(topo=topo, link=TCLink, controller=cont)
@@ -258,12 +281,42 @@ def run(topo, ip="127.0.0.1"):
 	print "Generating traffic..."
 	#DEBUGGING: not smart enough
 	create_traffic(net, datac, nm_ho)
+
+	#Simulation ID
+	orig_timestamp = datetime.now()
+	sim_id = 'Simulation_' + str(orig_timestamp.year) + str(orig_timestamp.month) + str(orig_timestamp.day) + str(orig_timestamp.hour)+ str(orig_timestamp.minute) + '_' + str(config.get('main','FailuresType'))
+	print "Simulation ID = %s" % sim_id
+	#Setting up log
+	print "Setting up log..."
+	if not path.exists('/tmp/simplelog'):
+		makedirs('/tmp/simplelog')
+
+	logger = logging.getLogger()
+	hdlr = logging.FileHandler('/tmp/simplelog/' + sim_id + '.log')
+	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+	hdlr.setFormatter(formatter)
+	logger.addHandler(hdlr)
+	logger.setLevel(logging.INFO)
+	logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_errors())))
 		
 	print "Beginning test..."
-	while True:
-		time.sleep(10)
-		err = random.randint(1,8)
-		create_error(err, nm_ho, datac, net)
+
+	minutes = int(config.get('main', 'MinutesRunning'))
+	now_timestamp = datetime.now()
+	failures_type = int(config.get('main', 'FailuresType'))
+
+	while (now_timestamp - orig_timestamp).total_seconds() < minutes*60:
+		time.sleep(5)
+		if failures_type != 0:
+			err = failures_type
+			create_error(err, nm_ho, datac, net, sim_id, logger)
+		else:
+			err = random.randint(1,9)
+			create_error(err, nm_ho, datac, net, sim_id, logger)
+		now_timestamp = datetime.now()
+
+	logger.info(sim_id + " stop " + str(json.dumps(random_errors.encode_errors())))
+	net.stop()
 
 	#DEBUGGING
 	#CLI(net)
@@ -274,6 +327,7 @@ if __name__ == '__main__':
 
 	config = ConfigParser.ConfigParser()
 	config.read('./config')
+
 	ip = config.get('main','Ip')
 	link_type = config.get('main','Distribution')
 	nm_sw_sf = int(config.get('main','MainSwitches'))

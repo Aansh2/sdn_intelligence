@@ -216,7 +216,7 @@ def create_error(err, nm_ho, datac, net):
 		switches_list = net.switches
 		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'switch whose idle-timeouts have been modified: %s' % switch_flow.dpid
-		random_errors.add_meter(switch_flow.dpid)
+		random_errors.change_idletimeout(switch_flow.dpid)
 
 	#DEBUGGING
 	#random_errors.send_report(err, host, server, net)

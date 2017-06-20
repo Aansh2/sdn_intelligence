@@ -44,6 +44,9 @@ WORKDIR /root
 RUN chmod +x mininet/util/install.sh
 RUN mininet/util/install.sh -a
 
+RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-5.4.1-amd64.deb
+RUN dpkg -i filebeat-5.4.1-amd64.deb
+
 RUN pip install --upgrade pip
 RUN pip install -U pip setuptools
 

@@ -172,7 +172,7 @@ def create_error(err, nm_ho, datac, net):
 		for n in range(0, 20):
 			time.sleep(1)
 			print 'Error %d' % err
-			create_traffic(net, datac, mn_ho)
+			create_traffic(net, datac, nm_ho)
 
 	elif err == 3:
 		print 'Error %d' % err
@@ -211,7 +211,7 @@ def create_error(err, nm_ho, datac, net):
 		print 'switch whose meter has been added: %s' % switch_flow.dpid
 		random_errors.add_meter(switch_flow.dpid)
 
-	elif err = 8:
+	elif err == 8:
 		print 'Error %d' % err
 		switches_list = net.switches
 		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]

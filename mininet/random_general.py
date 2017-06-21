@@ -172,16 +172,15 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 			h = net.get('h{}'.format(host))
 			h.cmd('./net/streaming_client.sh ' + ip_datac + ' &')
 
-		random_errors.send_report(err, ['h{}'.format(host)], sim_id, logger)
+		random_errors.send_report(err, {'Host': 'h{}'.format(host)}, sim_id, logger)
 
 	elif err == 2:
 		print 'Error %d ' % err
 		for n in range(0, 20):
 			time.sleep(1)
-			print 'Iteration %d' % n
 			create_traffic(net, datac, nm_ho)
 
-		random_errors.send_report(err, [], sim_id, logger)
+		random_errors.send_report(err, {}, sim_id, logger)
 
 	elif err == 3:
 		print 'Error %d' % err
@@ -190,7 +189,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		print 'link down: %s - %s' % (link_down.intf1, link_down.intf2)
 		net.link.delete(link_down) 
 
-		random_errors.send_report(err, [str(link_down.intf1), str(link_down.intf2)], sim_id, logger)
+		random_errors.send_report(err, {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2)}, sim_id, logger)
 
 	elif err == 4:
 		print 'Error %d' % err
@@ -200,7 +199,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		#'True' if you want to delete the interfaces too (you wont be able to restart it!!)
 		net.switch.stop(switch_down, False)
 
-		random_errors.send_report(err, [str(int(switch_down.dpid, 16))], sim_id, logger)
+		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16))}, sim_id, logger)
 
 	elif err == 5:
 		if datac != 0:
@@ -210,8 +209,8 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 			print 'host down: pid: %s name: %s' % (host_down.pid, host_down.name)
 			net.host.stop(host_down)
 
-			#DEBUGGING: BEWARE, host pid or host name
-			random_errors.send_report(err, [host_down.name], sim_id, logger)
+			#DEBUGGING: host pid or host name
+			random_errors.send_report(err, {'Host': host_down.name}, sim_id, logger)
 
 	elif err == 6:
 		print 'Error %d' % err
@@ -220,32 +219,45 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		print 'switch whose flow has been modified: %s' % switch_flow.dpid
 		random_errors.change_flow(switch_flow.dpid)
 
-		random_errors.send_report(err, [str(int(switch_flow.dpid, 16))], sim_id, logger)
+		random_errors.send_report(err, {'Switch': str(int(switch_flow.dpid, 16))}, sim_id, logger)
 
 	elif err == 7:
 		print 'Error %d' % err
 		switches_list = net.switches
 		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'switch whose meter has been added: %s' % switch_flow.dpid
-		random_errors.add_meter(switch_flow.dpid, sim_id, logger)
+		#Rate is in kbps
+		rate = random.randrange(1, 1000, 10)
+		random_errors.add_meter(switch_flow.dpid, sim_id, rate, logger)
+
+		random_errors.send_report(7, {'Switch': 's'+str(int(switch_flow.dpid, 16)), 'Rate': str(rate)}, sim_id, logger)
+
 
 	elif err == 8:
 		print 'Error %d' % err
 		switches_list = net.switches
-		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
-		print 'switch whose idle-timeouts have been modified: %s' % switch_flow.dpid
-		random_errors.change_idletimeout(switch_flow.dpid, sim_id, logger)
+		seconds = random.randint(1, 5)
+		print 'Idle-timeout has been added with %d seconds' % seconds
+
+		for switch_flow in switches_list:
+			random_errors.change_idletimeout(switch_flow.dpid, sim_id, seconds, logger)
+
+		random_errors.send_report(8, {'Time': str(seconds)}, sim_id, logger)
 
 	elif err == 9:
 		print 'Error %d' % err
 		switches_list = net.switches
-		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
-		print 'switch whose hard-timeouts have been modified: %s' % switch_flow.dpid
-		random_errors.change_hardtimeout(switch_flow.dpid, sim_id, logger)
+		seconds = random.randint(10, 15)
+		print 'Hard-timeout has been added with %d seconds' % seconds
+
+		for switch_flow in switches_list:
+			random_errors.change_hardtimeout(switch_flow.dpid, sim_id, seconds, logger)
+
+		random_errors.send_report(9, {'Time': str(seconds)}, sim_id, logger)
 
 	return
 
-def run(topo, ip):
+def run(topo, ip, config, config2):
 
 	cont = RemoteController('c1', ip=ip, port = 6633)
 	net = Mininet(topo=topo, link=TCLink, controller=cont)
@@ -316,12 +328,15 @@ def run(topo, ip):
 		now_timestamp = datetime.now()
 
 	logger.info(sim_id + " stop " + str(json.dumps(random_errors.encode_errors())))
+	print "Test ended. Shutting down network..."
 	net.stop()
+
+	return
 
 	#DEBUGGING
 	#CLI(net)
 
-if __name__ == '__main__':
+def init():
 
 	cleanup()
 
@@ -358,8 +373,11 @@ if __name__ == '__main__':
 			namespace[0] += nm_sw
 			namespace[1] += nm_ho
 
+		print "Building network..."
 		join = join_networks(topo, extra_topos, namespace[0], link_type)
 		topo = join[0]
 		namespace[0] = join[1]
 
-	run(topo, ip)
+	run(topo, ip, config, config2)
+
+	return

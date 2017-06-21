@@ -6,15 +6,15 @@ import random
 import logging
 import json
 
-error_dictionary = {1: ['A host is doing heavy use of the network by requiring a lot of streaming traffic ', ['Host involved']]}
-error_dictionary[2] = ['All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic',[]]
-error_dictionary[3] = ['A link has failed', ['One interface of the link', 'The other interface']]
-error_dictionary[4] = ['A switch has failed', ['Switch down']]
-error_dictionary[5] = ['A server from the datacenter (if there are datacenters) has failed', ['Host down']]
-error_dictionary[6] = ['Flows (except the CONTROLLER one) from a switch have been modified by changing the node-connector-output field', ['Switch affected']]
-error_dictionary[7] = ['A meter has been added to the flows of a switch', ['Switch affected', 'Meter rate']]
-error_dictionary[8] = ['An idle-timeout has been aded to the flows of a switch', ['Switch affected', 'Timeout time']]
-error_dictionary[9] = ['A hard-timeout has been aded to the flows of a switch', ['Switch affected', 'Timeout time']]
+error_dictionary = {1: ['A host is doing heavy use of the network by requiring a lot of streaming traffic ', {'Host': ''}]}
+error_dictionary[2] = ['All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic',{}]
+error_dictionary[3] = ['A link has failed', {'Interface 1': '', 'Interface 2': ''}]
+error_dictionary[4] = ['A switch has failed', {'Switch': ''}]
+error_dictionary[5] = ['A server from the datacenter (if there are datacenters) has failed', {'Host': ''}]
+error_dictionary[6] = ['All flows (except the CONTROLLER one) from a switch have been modified by changing the node-connector-output field', {'Switch': ''}]
+error_dictionary[7] = ['A meter has been added to the flows of a switch', {'Switch': '', 'Rate': ''}]
+error_dictionary[8] = ['An idle-timeout has been aded to the flows of all switches', {'Time': ''}]
+error_dictionary[9] = ['A hard-timeout has been aded to the flows of all switches', {'Time': ''}]
 
 def send_report(err, parameters, sim_id, logger):
 	error_report = error_dictionary.get(err)
@@ -76,7 +76,7 @@ def change_flow(node):
 				
 	return
 
-def add_meter(node, sim_id, logger):
+def add_meter(node, sim_id, rate, logger):
 	node_dec = int(node, 16)
 
 	config = ConfigParser.ConfigParser()
@@ -95,8 +95,7 @@ def add_meter(node, sim_id, logger):
 	child.text = 'meter-kbps'
 	child = ET.SubElement(top, 'meter-band-headers')
 
-	rate = random.randrange(1, 1000, 10)
-
+	
 	subchild = ET.SubElement(child, 'meter-band-header')
 	subchild_2 = ET.SubElement(subchild, 'band-id')
 	subchild_2.text = '0'
@@ -118,8 +117,6 @@ def add_meter(node, sim_id, logger):
 	conn3 = httplib.HTTPConnection(ip+":8181")
 	headers3 = { 'Content-Type' : 'application/xml', 'Accept' : 'application/xml', 'Authorization' : 'Basic %s' %  userAndPass }
 	conn3.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:meter/1", body = result, headers = headers3)
-
-	send_report(7, ['s'+str(node_dec), str(rate)], sim_id, logger)
 
 	conn = httplib.HTTPConnection(ip+":8181")
 	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
@@ -161,7 +158,7 @@ def add_meter(node, sim_id, logger):
 
 	return
 
-def change_idletimeout(node, sim_id, logger):
+def change_idletimeout(node, sim_id, seconds, logger):
 
 	node_dec = int(node, 16)
 	
@@ -177,8 +174,7 @@ def change_idletimeout(node, sim_id, logger):
 	r1 = conn.getresponse()
 	resp_xml = r1.read()
 	flow_id = None
-	timeout = str(random.randint(1, 10))
-	send_report(8, ['s'+str(node_dec), str(timeout)], sim_id, logger)
+	timeout = str(seconds)
 
 	root = ET.fromstring(resp_xml)
 
@@ -206,7 +202,7 @@ def change_idletimeout(node, sim_id, logger):
 				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
 	return
 
-def change_hardtimeout(node, sim_id, logger):
+def change_hardtimeout(node, sim_id, seconds, logger):
 
 	node_dec = int(node, 16)
 	
@@ -222,9 +218,7 @@ def change_hardtimeout(node, sim_id, logger):
 	r1 = conn.getresponse()
 	resp_xml = r1.read()
 	flow_id = None
-	timeout = str(random.randint(1, 10))
-
-	send_report(9, ['s'+str(node_dec), str(timeout)], sim_id, logger)
+	timeout = str(seconds)
 
 	root = ET.fromstring(resp_xml)
 

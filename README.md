@@ -6,7 +6,7 @@ Once in the mininet CLI,
 Script execution:
 
 ```sh
-python random_general.py
+py simulate.py
 ```
 Once running, it will create an error in the network every 10 seconds
 To end its execution, press ctrl+c
@@ -22,6 +22,9 @@ Configuration is determined by **config** and **repo_subnets** files. Config mus
 - MainHosts: number of hosts directly connected to the core network
 - Datacenters: number of datacenters in the core network
 network. "No" otherwise.
+- MinutesRunning: amount of time (in minutes) you want each simulation running
+- Batch: number of simulations you want to execute
+- FailuresType: type of failures you want to simulate in your network
 
 It also will have another section for each extra network.
 
@@ -38,6 +41,12 @@ MainSwitches = 20
 MainHosts = 0
 
 Datacenters = 2
+
+MinutesRunning = 180
+
+Batch = 4
+
+FailuresType = 0
 
 [extra1]
 

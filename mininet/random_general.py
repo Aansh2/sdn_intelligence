@@ -163,7 +163,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 			h = net.get('h{}'.format(host))
 			h.cmd('./net/streaming_client.sh ' + ip_datac + ' &')
 
-		random_errors.send_report(err, {'Host': 'h{}'.format(host)}, sim_id, logger)
+		random_errors.send_report(err, {'Host': 'h{}'.format(host), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 2:
 		print 'Error %d ' % err
@@ -172,7 +172,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 			time.sleep(1)
 			create_traffic(net, datac, nm_ho)
 
-		random_errors.send_report(err, {}, sim_id, logger)
+		random_errors.send_report(err, {'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 3:
 		print 'Error %d' % err
@@ -181,7 +181,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		print 'link down: %s - %s' % (link_down.intf1, link_down.intf2)
 		net.link.delete(link_down) 
 
-		random_errors.send_report(err, {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2)}, sim_id, logger)
+		random_errors.send_report(err, {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 4:
 		print 'Error %d' % err
@@ -191,7 +191,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		#'True' if you want to delete the interfaces too (you wont be able to restart it!!)
 		net.switch.stop(switch_down, False)
 
-		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16))}, sim_id, logger)
+		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 5:
 		if datac != 0:
@@ -202,7 +202,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 			net.host.stop(host_down)
 
 			#DEBUGGING: host pid or host name
-			random_errors.send_report(err, {'Host': host_down.name}, sim_id, logger)
+			random_errors.send_report(err, {'Host': host_down.name, 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 6:
 		print 'Error %d' % err
@@ -211,7 +211,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		print 'switch whose flow has been modified: %s' % switch_flow.dpid
 		random_errors.change_flow(switch_flow.dpid)
 
-		random_errors.send_report(err, {'Switch': str(int(switch_flow.dpid, 16))}, sim_id, logger)
+		random_errors.send_report(err, {'Switch': str(int(switch_flow.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 7:
 		print 'Error %d' % err
@@ -222,7 +222,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		rate = random.randrange(1, 1000, 10)
 		random_errors.add_meter(switch_flow.dpid, sim_id, rate, logger)
 
-		random_errors.send_report(7, {'Switch': 's'+str(int(switch_flow.dpid, 16)), 'Rate': str(rate)}, sim_id, logger)
+		random_errors.send_report(7, {'Switch': 's'+str(int(switch_flow.dpid, 16)), 'Rate': str(rate), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 
 	elif err == 8:
@@ -234,7 +234,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		for switch_flow in switches_list:
 			random_errors.change_idletimeout(switch_flow.dpid, sim_id, seconds, logger)
 
-		random_errors.send_report(8, {'Time': str(seconds)}, sim_id, logger)
+		random_errors.send_report(8, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 9:
 		print 'Error %d' % err
@@ -245,7 +245,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		for switch_flow in switches_list:
 			random_errors.change_hardtimeout(switch_flow.dpid, sim_id, seconds, logger)
 
-		random_errors.send_report(9, {'Time': str(seconds)}, sim_id, logger)
+		random_errors.send_report(9, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	return
 

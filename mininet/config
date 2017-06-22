@@ -1,8 +1,11 @@
 [main]
-Ip = 172.17.0.2
+Ip = 172.18.0.1
 Distribution = equal
 MainSwitches = 20
 MainHosts = 0
 Datacenters = 2
+MinutesRunning = 180
+Batch = 4
+FailuresType = 0
 [extra1]
 [extra2]

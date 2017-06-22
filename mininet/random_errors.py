@@ -3,9 +3,29 @@ import httplib
 import base64
 import ConfigParser
 import random
+import logging
+import json
 
-def send_report(err, host, server, net):
-	return
+error_dictionary = {1: {'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': ''}}}
+error_dictionary[2] = {'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {}}
+error_dictionary[3] = {'Desc': 'A link has failed', 'Params': {'Interface 1': '', 'Interface 2': ''}}
+error_dictionary[4] = {'Desc': 'A switch has failed', 'Params': {'Switch': ''}}
+error_dictionary[5] = {'Desc': 'A server from the datacenter (if there are datacenters) has failed', 'Params': {'Host': ''}}
+error_dictionary[6] = {'Desc': 'All flows (except the CONTROLLER one) from a switch have been modified by changing the node-connector-output field', 'Params': {'Switch': ''}}
+error_dictionary[7] = {'Desc': 'A meter has been added to the flows of a switch', 'Params': {'Switch': '', 'Rate': ''}}
+error_dictionary[8] = {'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': ''}}
+error_dictionary[9] = {'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': ''}}
+
+def send_report(err, parameters, sim_id, logger):
+	error_report = error_dictionary.get(err)
+	error_report['Params'] = parameters
+
+	logger.info(sim_id + " err " + str(json.dumps({err: error_report})))
+
+	return 
+
+def encode_errors():
+	return error_dictionary
 
 def change_flow(node):
 	node_dec = int(node, 16)
@@ -55,7 +75,7 @@ def change_flow(node):
 				
 	return
 
-def add_meter(node):
+def add_meter(node, sim_id, rate, logger):
 	node_dec = int(node, 16)
 
 	config = ConfigParser.ConfigParser()
@@ -74,8 +94,7 @@ def add_meter(node):
 	child.text = 'meter-kbps'
 	child = ET.SubElement(top, 'meter-band-headers')
 
-	rate = random.randrange(1, 1000, 10)
-
+	
 	subchild = ET.SubElement(child, 'meter-band-header')
 	subchild_2 = ET.SubElement(subchild, 'band-id')
 	subchild_2.text = '0'
@@ -138,7 +157,7 @@ def add_meter(node):
 
 	return
 
-def change_idletimeout(node):
+def change_idletimeout(node, sim_id, seconds, logger):
 
 	node_dec = int(node, 16)
 	
@@ -154,6 +173,7 @@ def change_idletimeout(node):
 	r1 = conn.getresponse()
 	resp_xml = r1.read()
 	flow_id = None
+	timeout = str(seconds)
 
 	root = ET.fromstring(resp_xml)
 
@@ -169,7 +189,51 @@ def change_idletimeout(node):
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}idle-timeout'):
-					node.text = str(random.randint(1, 10))
+					node.text = timeout
+
+				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
+					root2.remove(node)
+
+				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+
+				conn2 = httplib.HTTPConnection(ip+":8181")
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
+				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
+	return
+
+def change_hardtimeout(node, sim_id, seconds, logger):
+
+	node_dec = int(node, 16)
+	
+	config = ConfigParser.ConfigParser()
+	config.read('./config')
+	ip = config.get('main','Ip')
+
+	conn = httplib.HTTPConnection(ip+":8181")
+	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
+	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
+	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", headers = headers)
+
+	r1 = conn.getresponse()
+	resp_xml = r1.read()
+	flow_id = None
+	timeout = str(seconds)
+
+	root = ET.fromstring(resp_xml)
+
+	for child in root.findall('{urn:opendaylight:flow:inventory}flow'):
+		for subchild in child:
+			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
+				flow_id = subchild.text
+
+				conn2 = httplib.HTTPConnection(ip+":8181")
+				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
+				r2 = conn2.getresponse()
+				resp2_xml = r2.read()
+				root2 = ET.fromstring(resp2_xml)
+
+				for node in root2.iter('{urn:opendaylight:flow:inventory}hard-timeout'):
+					node.text = timeout
 
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)

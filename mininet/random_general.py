@@ -288,15 +288,12 @@ def run(topo, ip, config, config2):
 
 	#Simulation ID
 	orig_timestamp = datetime.now()
-	sim_id = 'Simulation_' + str(orig_timestamp.year) + str(orig_timestamp.month) + str(orig_timestamp.day) + str(orig_timestamp.hour)+ str(orig_timestamp.minute) + '_' + str(config.get('main','FailuresType'))
+	sim_id = str(orig_timestamp.year) + str(orig_timestamp.month) + str(orig_timestamp.day) + str(orig_timestamp.hour)+ str(orig_timestamp.minute) + '_' + str(config.get('main','FailuresType'))
 	print "Simulation ID = %s" % sim_id
 	#Setting up log
 	print "Setting up log..."
-	if not path.exists('/tmp/simplelog'):
-		makedirs('/tmp/simplelog')
-
 	logger = logging.getLogger()
-	hdlr = logging.FileHandler('/tmp/simplelog/' + sim_id + '.log')
+	hdlr = logging.FileHandler('/root/log/' + sim_id + '.log')
 	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 	hdlr.setFormatter(formatter)
 	logger.addHandler(hdlr)
@@ -319,7 +316,7 @@ def run(topo, ip, config, config2):
 			create_error(err, nm_ho, datac, net, sim_id, logger)
 		now_timestamp = datetime.now()
 
-	logger.info(sim_id + " stop " + str(json.dumps(random_errors.encode_errors())))
+	logger.info(sim_id + " stop")
 	print "Test ended. Shutting down network..."
 	net.stop()
 

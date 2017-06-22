@@ -8,12 +8,12 @@ Script execution:
 ```sh
 py simulate.py
 ```
-Once running, it will create an error in the network every 10 seconds
+Once running, it will create a failure in the network every 5 seconds (it could be more, if the execution of the failure takes more than 5 secondss)
 To end its execution, press ctrl+c
 
 Configuration is determined by **config** and **repo_subnets** files. Config must have a [main] section with the following attributes:
 
-- Ip: ip address of controller (you can check it using "docker inspect opendaylight")
+- Ip: ip address of the controller (you can check it using "docker inspect opendaylight")
 - Distribution: distribution of link bandwidth between hosts and network
 	- equal: uniform distribution
 	- badwifi, wifi, xdsl, fiber50, fiber300: gaussian distribution centered at 3, 10, 20, 50 or 300 Mbps

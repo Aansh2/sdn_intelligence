@@ -6,20 +6,19 @@ import random
 import logging
 import json
 
-error_dictionary = {1: ['A host is doing heavy use of the network by requiring a lot of streaming traffic ', {'Host': ''}]}
-error_dictionary[2] = ['All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic',{}]
-error_dictionary[3] = ['A link has failed', {'Interface 1': '', 'Interface 2': ''}]
-error_dictionary[4] = ['A switch has failed', {'Switch': ''}]
-error_dictionary[5] = ['A server from the datacenter (if there are datacenters) has failed', {'Host': ''}]
-error_dictionary[6] = ['All flows (except the CONTROLLER one) from a switch have been modified by changing the node-connector-output field', {'Switch': ''}]
-error_dictionary[7] = ['A meter has been added to the flows of a switch', {'Switch': '', 'Rate': ''}]
-error_dictionary[8] = ['An idle-timeout has been aded to the flows of all switches', {'Time': ''}]
-error_dictionary[9] = ['A hard-timeout has been aded to the flows of all switches', {'Time': ''}]
+error_dictionary = {1: {'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': ''}}}
+error_dictionary[2] = {'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {}}
+error_dictionary[3] = {'Desc': 'A link has failed', 'Params': {'Interface 1': '', 'Interface 2': ''}}
+error_dictionary[4] = {'Desc': 'A switch has failed', 'Params': {'Switch': ''}}
+error_dictionary[5] = {'Desc': 'A server from the datacenter (if there are datacenters) has failed', 'Params': {'Host': ''}}
+error_dictionary[6] = {'Desc': 'All flows (except the CONTROLLER one) from a switch have been modified by changing the node-connector-output field', 'Params': {'Switch': ''}}
+error_dictionary[7] = {'Desc': 'A meter has been added to the flows of a switch', 'Params': {'Switch': '', 'Rate': ''}}
+error_dictionary[8] = {'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': ''}}
+error_dictionary[9] = {'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': ''}}
 
 def send_report(err, parameters, sim_id, logger):
 	error_report = error_dictionary.get(err)
-	error_report.pop()
-	error_report.append(parameters)
+	error_report['Params'] = parameters
 
 	logger.info(sim_id + " err " + str(json.dumps({err: error_report})))
 

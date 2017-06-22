@@ -1,13 +1,3 @@
-""" Scale-free random topology
-Based on the work of Oscar Araque, PhD Student at the Polytechnical University
-of Madrid.
-author: Fernando Benayas de los Santos
-"""
-
-"""
-TOPOLOGY CONFIG
-"""
-
 import random
 import sys
 import random_scalefree
@@ -169,6 +159,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		print 'Error %d in host %s' % (err, host)	
 		for n in range(0, 20):
 			time.sleep(1)
+			print '		 Iteration %d' % (n+1)
 			h = net.get('h{}'.format(host))
 			h.cmd('./net/streaming_client.sh ' + ip_datac + ' &')
 
@@ -177,6 +168,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 	elif err == 2:
 		print 'Error %d ' % err
 		for n in range(0, 20):
+			print '		 Iteration %d' % (n+1)
 			time.sleep(1)
 			create_traffic(net, datac, nm_ho)
 

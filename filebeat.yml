@@ -30,7 +30,7 @@ filebeat.prospectors:
 #----------------------------- Logstash output --------------------------------
 output.logstash:
   # The Logstash hosts
-    hosts: '${COLLECTOR:localhost}:5044'
+    hosts: ["${COLLECTOR:collector}:5044"]
 
   # Optional SSL. By default is off.
   # List of root certificates for HTTPS server verifications

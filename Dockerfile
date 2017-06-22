@@ -46,6 +46,9 @@ RUN mininet/util/install.sh -a
 
 RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-5.4.1-amd64.deb
 RUN dpkg -i filebeat-5.4.1-amd64.deb
+RUN cp filebeat.yml /etc/filebeat
+RUN mkdir ./log/
+RUN service start filebeat
 
 RUN pip install --upgrade pip
 RUN pip install -U pip setuptools

@@ -299,7 +299,10 @@ def run(topo, ip, config, config2):
 	logger.addHandler(hdlr)
 	logger.setLevel(logging.INFO)
 	logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_errors())))
-		
+	
+	print "Giving time for the collector to catch up..."
+	time.sleep(15)
+
 	print "Beginning test..."
 
 	minutes = int(config.get('main', 'MinutesRunning'))

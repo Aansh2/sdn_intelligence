@@ -8,14 +8,14 @@ import json
 
 error_dictionary = {1: {'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}}
 error_dictionary[2] = {'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {'Timestamp': ''}}
-error_dictionary[3] = {'Desc': 'A link has failed', 'Params': {'Interface 1': '', 'Interface 2': '', 'Timestamp': ''}}
+error_dictionary[3] = {'Desc': 'A link has failed', 'Params': {'Interface_1': '', 'Interface_2': '', 'Timestamp': ''}}
 error_dictionary[4] = {'Desc': 'A switch has failed', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary[5] = {'Desc': 'A server from the datacenter (if there are datacenters) has failed', 'Params': {'Host': '', 'Timestamp': ''}}
 error_dictionary[6] = {'Desc': 'All flows (except the CONTROLLER one) from a switch have been modified by changing the node-connector-output field', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary[7] = {'Desc': 'A meter has been added to the flows of a switch', 'Params': {'Switch': '', 'Rate': '', 'Timestamp': ''}}
 error_dictionary[8] = {'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary[9] = {'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
-
+error_dictionary['delay'] = 5
 def send_report(err, parameters, sim_id, logger):
 	error_report = error_dictionary.get(err)
 	error_report['Params'] = parameters

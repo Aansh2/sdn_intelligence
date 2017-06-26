@@ -220,9 +220,9 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		print 'switch whose meter has been added: %s' % switch_flow.dpid
 		#Rate is in kbps
 		rate = random.randrange(1, 1000, 10)
-		random_errors.add_meter(switch_flow.dpid, sim_id, rate, logger)
+		random_errors.add_meter(switch_flow.dpid, rate)
 
-		random_errors.send_report(7, {'Switch': 's'+str(int(switch_flow.dpid, 16)), 'Rate': str(rate), 'Timestamp': str(datetime.now())}, sim_id, logger)
+		random_errors.send_report(err, {'Switch': 's'+str(int(switch_flow.dpid, 16)), 'Rate': str(rate), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 
 	elif err == 8:
@@ -232,9 +232,9 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		print 'Idle-timeout has been added with %d seconds' % seconds
 
 		for switch_flow in switches_list:
-			random_errors.change_idletimeout(switch_flow.dpid, sim_id, seconds, logger)
+			random_errors.change_idletimeout(switch_flow.dpid, seconds)
 
-		random_errors.send_report(8, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
+		random_errors.send_report(err, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 9:
 		print 'Error %d' % err
@@ -243,9 +243,19 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		print 'Hard-timeout has been added with %d seconds' % seconds
 
 		for switch_flow in switches_list:
-			random_errors.change_hardtimeout(switch_flow.dpid, sim_id, seconds, logger)
+			random_errors.change_hardtimeout(switch_flow.dpid, seconds)
 
-		random_errors.send_report(9, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
+		random_errors.send_report(err, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
+
+	elif err == 10:
+		print 'Error %d' % err
+		switches_list = net.switches
+		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+		print 'Switch whose flows have been deleted: %s' % switch_down.dpid
+		
+		random_errors.delete_flow(switch_down.dpid)
+
+		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	return
 
@@ -327,6 +337,7 @@ def run(topo, ip, config, config2):
 
 	#DEBUGGING
 	#CLI(net)
+	#return
 
 def init():
 

@@ -50,7 +50,11 @@ FailuresType = 0
 
 [extra1]
 
+Number = 1
+
 [extra2]
+
+Number = 2
 
 Those [extra1], [extra2] are networks attached to the main network, and are defined in **repo_subnets**,
 wich has the following structure:
@@ -65,4 +69,8 @@ Hosts = y
 
 Where x is the number of switches you want in that extra network, and y is the number of hosts.
 
-Please remember to remove the opendaylight container (sudo docker rm opendaylight) after using it.
+The 'Number' field is the number of networks of that type that you want in your network.
+
+Please remember to remove the containers (sudo docker-compose stop if you are running it in detached mode or ctrl+c if 
+
+you are running it in attached mode, and sudo docker-compose down) after using it.

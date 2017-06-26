@@ -152,8 +152,12 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 
 	#DEBUGGING I'm supposing zero hosts in the main network
 	host = random.randint(datac*3+1, nm_ho)
-	server = random.randint(1, datac*3)
-	ip_datac = '10.0.0.' + str(server)
+	
+	if datac > 0:
+		server = random.randint(1, datac*3)
+		ip_datac = '10.0.0.' + str(server)
+	else:
+		ip_datac = '0.0.0.0'
 
 	if err == 1:
 		print 'Error %d in host %s' % (err, host)	
@@ -201,7 +205,6 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 			print 'host down: pid: %s name: %s' % (host_down.pid, host_down.name)
 			net.host.stop(host_down)
 
-			#DEBUGGING: host pid or host name
 			random_errors.send_report(err, {'Host': host_down.name, 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 6:
@@ -368,13 +371,14 @@ def init():
 		config2.read('./repo_subnets')
 
 		for i in range(n_networks):
+			nm_networks = int(config.get(ex_net[i+1], 'Number'))
+			for n in range(nm_networks):
+				nm_sw = int(config2.get(ex_net[i+1],'Switches'))
+				nm_ho = int(config2.get(ex_net[i+1],'Hosts'))
 
-			nm_sw = int(config2.get(ex_net[i+1],'Switches'))
-			nm_ho = int(config2.get(ex_net[i+1],'Hosts'))
-		
-			extra_topos["topo{}".format(i)] = random_scalefree.RandomScaleFree(link_type, 0, nm_sw, nm_ho, namespace)
-			namespace[0] += nm_sw
-			namespace[1] += nm_ho
+				extra_topos["topo{}".format(i+n)] = random_scalefree.RandomScaleFree(link_type, 0, nm_sw, nm_ho, namespace)
+				namespace[0] += nm_sw
+				namespace[1] += nm_ho
 
 		print "Building network..."
 		join = join_networks(topo, extra_topos, namespace[0], link_type)

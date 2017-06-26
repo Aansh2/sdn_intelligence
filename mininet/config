@@ -8,4 +8,8 @@ MinutesRunning = 180
 Batch = 4
 FailuresType = 0
 [extra1]
+Number = 1
 [extra2]
+Number = 1
+[extra3]
+Number = 2

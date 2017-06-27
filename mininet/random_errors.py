@@ -17,7 +17,7 @@ error_dictionary[7] = {'Desc': 'A meter has been added to the flows of a switch'
 error_dictionary[8] = {'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary[9] = {'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary[10] = {'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
-error_dictionary['delay'] = 5
+error_dictionary['delay'] = 3
 
 def send_report(err, parameters, sim_id, logger):
 	error_report = error_dictionary.get(err)

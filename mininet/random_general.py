@@ -314,7 +314,7 @@ def run(topo, ip, config, config2):
 	logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_errors())))
 	
 	print "Giving time for the collector to catch up..."
-	time.sleep(15)
+	time.sleep(25)
 
 	print "Beginning test..."
 

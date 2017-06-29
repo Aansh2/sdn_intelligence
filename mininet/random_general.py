@@ -256,7 +256,17 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'Switch whose flows have been deleted: %s' % switch_down.dpid
 		
-		random_errors.delete_flow(switch_down.dpid)
+		random_errors.change_inport(switch_down.dpid)
+
+		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+
+	elif err == 11:
+		print 'Error %d' % err
+		switches_list = net.switches
+		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+		print 'Switch whose in-ports have been messed: %s' % switch_down.dpid
+		
+		random_errors.change_inport(switch_down.dpid)
 
 		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 

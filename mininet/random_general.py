@@ -161,7 +161,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 
 	if err == 1:
 		print 'Error %d in host %s' % (err, host)	
-		for n in range(0, 5):
+		for n in range(0, 6):
 			time.sleep(1)
 			print '		 Iteration %d' % (n+1)
 			h = net.get('h{}'.format(host))
@@ -171,7 +171,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 
 	elif err == 2:
 		print 'Error %d ' % err
-		for n in range(0, 5s):
+		for n in range(0, 3):
 			print '		 Iteration %d' % (n+1)
 			time.sleep(1)
 			create_traffic(net, datac, nm_ho)
@@ -255,13 +255,13 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'Switch whose flows have been deleted: %s' % switch_down.dpid
 		
-		random_errors.change_inport(switch_down.dpid)
+		random_errors.delete_flow(switch_down.dpid)
 
 		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	return
 
-def run(topo, ip, config, config2):
+def run(topo, ip, config, config2, pred_error):
 
 	cont = RemoteController('c1', ip=ip, port = 6633)
 	net = Mininet(topo=topo, link=TCLink, controller=cont)
@@ -300,7 +300,7 @@ def run(topo, ip, config, config2):
 
 	#Simulation ID
 	orig_timestamp = datetime.now()
-	sim_id = str(orig_timestamp.year) + str(orig_timestamp.month) + str(orig_timestamp.day) + str(orig_timestamp.hour)+ str(orig_timestamp.minute) + '_' + str(config.get('main','FailuresType'))
+	sim_id = str(orig_timestamp.year) + str(orig_timestamp.month) + str(orig_timestamp.day) + str(orig_timestamp.hour)+ str(orig_timestamp.minute) + '_' + str(pred_error)
 	print "Simulation ID = %s" % sim_id
 	#Setting up log
 	print "Setting up log..."
@@ -319,12 +319,11 @@ def run(topo, ip, config, config2):
 
 	minutes = int(config.get('main', 'MinutesRunning'))
 	now_timestamp = datetime.now()
-	failures_type = int(config.get('main', 'FailuresType'))
 
 	while (now_timestamp - orig_timestamp).total_seconds() < minutes*60:
 		time.sleep(5)
-		if failures_type != 0:
-			err = failures_type
+		if pred_error != 0:
+			err = pred_error
 			create_error(err, nm_ho, datac, net, sim_id, logger)
 		else:
 			err = random.randint(1,10)
@@ -341,7 +340,7 @@ def run(topo, ip, config, config2):
 	#CLI(net)
 	#return
 
-def init():
+def init(pred_error):
 
 	cleanup()
 
@@ -384,6 +383,6 @@ def init():
 		topo = join[0]
 		namespace[0] = join[1]
 
-	run(topo, ip, config, config2)
+	run(topo, ip, config, config2, pred_error)
 
 	return

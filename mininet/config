@@ -6,10 +6,6 @@ MainHosts = 0
 Datacenters = 2
 MinutesRunning = 180
 Batch = 4
-FailuresType = 0
+FailuresType = 0,5,7,6
 [extra1]
 Number = 1
-[extra2]
-Number = 1
-[extra3]
-Number = 2

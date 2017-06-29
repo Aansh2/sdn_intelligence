@@ -10,8 +10,11 @@ if __name__ == '__main__':
 	os.system("service filebeat start")
 	print "Beginning batch. Number of simulations: %d" % (nm_simulations)
 
+	list_errors = config.get('main','FailuresType').split(',')
+
 	for n in range(nm_simulations):
 		print "Simulation %d" % (n+1)
-		random_general.init()
-
+		random_general.init(int(list_errors[n]))
+		print int(list_errors[n])
+		
 	print "End of batch"

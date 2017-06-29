@@ -161,7 +161,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 
 	if err == 1:
 		print 'Error %d in host %s' % (err, host)	
-		for n in range(0, 20):
+		for n in range(0, 5):
 			time.sleep(1)
 			print '		 Iteration %d' % (n+1)
 			h = net.get('h{}'.format(host))
@@ -171,7 +171,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 
 	elif err == 2:
 		print 'Error %d ' % err
-		for n in range(0, 20):
+		for n in range(0, 5s):
 			print '		 Iteration %d' % (n+1)
 			time.sleep(1)
 			create_traffic(net, datac, nm_ho)
@@ -219,13 +219,12 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 	elif err == 7:
 		print 'Error %d' % err
 		switches_list = net.switches
-		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
-		print 'switch whose meter has been added: %s' % switch_flow.dpid
-		#Rate is in kbps
-		rate = random.randrange(1, 1000, 10)
-		random_errors.add_meter(switch_flow.dpid, rate)
+		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+		print 'Switch whose in-ports have been messed: %s' % switch_down.dpid
+		
+		random_errors.change_inport(switch_down.dpid)
 
-		random_errors.send_report(err, {'Switch': 's'+str(int(switch_flow.dpid, 16)), 'Rate': str(rate), 'Timestamp': str(datetime.now())}, sim_id, logger)
+		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 
 	elif err == 8:
@@ -255,16 +254,6 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 		switches_list = net.switches
 		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'Switch whose flows have been deleted: %s' % switch_down.dpid
-		
-		random_errors.change_inport(switch_down.dpid)
-
-		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-
-	elif err == 11:
-		print 'Error %d' % err
-		switches_list = net.switches
-		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-		print 'Switch whose in-ports have been messed: %s' % switch_down.dpid
 		
 		random_errors.change_inport(switch_down.dpid)
 
@@ -338,7 +327,7 @@ def run(topo, ip, config, config2):
 			err = failures_type
 			create_error(err, nm_ho, datac, net, sim_id, logger)
 		else:
-			err = random.randint(1,9)
+			err = random.randint(1,10)
 			create_error(err, nm_ho, datac, net, sim_id, logger)
 		now_timestamp = datetime.now()
 

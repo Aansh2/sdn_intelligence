@@ -1,6 +1,7 @@
 import ConfigParser
 import random_general
 import os
+import math
 if __name__ == '__main__':
 
 	config = ConfigParser.ConfigParser()
@@ -11,10 +12,12 @@ if __name__ == '__main__':
 	print "Beginning batch. Number of simulations: %d" % (nm_simulations)
 
 	list_errors = config.get('main','FailuresType').split(',')
+	ln = len(list_errors)
 
 	for n in range(nm_simulations):
 		print "Simulation %d" % (n+1)
-		random_general.init(int(list_errors[n]))
-		print int(list_errors[n])
-		
+
+		div = int(math.floor(n/ln))
+		random_general.init(int(list_errors[n-div*ln]))
+
 	print "End of batch"

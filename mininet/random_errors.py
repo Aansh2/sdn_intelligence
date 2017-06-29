@@ -79,6 +79,8 @@ def change_flow(node):
 				
 	return
 
+#NOT WORKING with OvS 2.5.2 (doesn't implements meter features)
+'''
 def add_meter(node, rate):
 	node_dec = int(node, 16)
 
@@ -160,7 +162,7 @@ def add_meter(node, rate):
 				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
 
 	return
-
+'''
 def change_idletimeout(node, seconds):
 
 	node_dec = int(node, 16)

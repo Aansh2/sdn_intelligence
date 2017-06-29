@@ -44,9 +44,9 @@ Datacenters = 2
 
 MinutesRunning = 180
 
-Batch = 4
+Batch = 3
 
-FailuresType = 0
+FailuresType = 0,5
 
 [extra1]
 

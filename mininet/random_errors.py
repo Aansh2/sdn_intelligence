@@ -17,6 +17,7 @@ error_dictionary[7] = {'Desc': 'All flow entries of a switch have changed their 
 error_dictionary[8] = {'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary[9] = {'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary[10] = {'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary[11] = {'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
 
 error_dictionary['delay'] = 3
 
@@ -345,4 +346,48 @@ def change_inport(node):
 				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
 				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
 				
+	return
+
+def delete_lldp_flow(node):
+	node_dec = int(node, 16)
+
+	config = ConfigParser.ConfigParser()
+	config.read('./config')
+	ip = config.get('main','Ip')
+
+	conn = httplib.HTTPConnection(ip+":8181")
+	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
+	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
+	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0", headers = headers)
+	r1 = conn.getresponse()
+
+	resp_xml = r1.read()
+	flow_id = None
+
+	root = ET.fromstring(resp_xml)
+
+	for child in root.findall('{urn:opendaylight:flow:inventory}flow'):
+		for subchild in child.iter('{urn:opendaylight:flow:inventory}type'):
+			if subchild.text == '35020':
+				action = list(child.iter('{urn:opendaylight:flow:inventory}action'))
+				output_action = list(child.iter('{urn:opendaylight:flow:inventory}output-action'))
+
+				if len(action) >= 1 and len(output_action) >= 1:
+					action[0].remove(output_action[0])
+					drop_action = ET.SubElement(action[0], 'drop-action')
+
+		for node in child.iter('{urn:opendaylight:flow:statistics}flow-statistics'):
+			child.remove(node)
+
+	for child in root.findall('{urn:opendaylight:flow:table:statistics}flow-table-statistics'):
+		root.remove(child)	
+
+	result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '')
+
+	conn2 = httplib.HTTPConnection(ip+":8181")
+	headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
+	conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0", body = result, headers = headers2)
+
+	print conn2.getresponse().read()
+			
 	return

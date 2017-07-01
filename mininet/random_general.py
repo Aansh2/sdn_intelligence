@@ -259,6 +259,16 @@ def create_error(err, nm_ho, datac, net, sim_id, logger):
 
 		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
+	elif err == 11:
+		print 'Error %d' % err
+		switches_list = net.switches
+		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+		print 'Switch that will drop its lldp packages: %s' % switch_down.dpid
+		
+		random_errors.delete_lldp_flow(switch_down.dpid)
+
+		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+
 	return
 
 def run(topo, ip, config, config2, pred_error):
@@ -326,7 +336,7 @@ def run(topo, ip, config, config2, pred_error):
 			err = pred_error
 			create_error(err, nm_ho, datac, net, sim_id, logger)
 		else:
-			err = random.randint(1,10)
+			err = random.randint(1,11)
 			create_error(err, nm_ho, datac, net, sim_id, logger)
 		now_timestamp = datetime.now()
 

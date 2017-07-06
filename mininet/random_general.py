@@ -18,8 +18,6 @@ from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.clean import cleanup
 
-#GENERAL DEBUGGING: check 0 datacenters
-
 #Randomize bw of access link
 def random_access(self, link_type="equal"):
 	type_id = 0
@@ -123,30 +121,34 @@ def trim(topo):
 
 def create_traffic(net, datac, nm_ho):
 
-	for n in range(nm_ho):
-		time.sleep(1)
-		x = random.randint(0,6)
-		h = net.get('h{}'.format(n+1))
-		#DEBUGGING This is considering that we have 0 hosts in main network
-		#DEBUGGING One could send messages to himself
-		if datac > 0:
-			randip_datac = '10.0.0.' + str(random.randint(1, datac*3))
-		else:
-			randip_datac = '0.0.0.0'
-		randip_ho = '10.0.0.' + str(random.randint(datac + 1, nm_ho))
-		traffic = {
-			0: ' ',
-			1: './net/mail_receive.sh ' + randip_datac + ' &',
-			2: './net/mail_send.sh ' + randip_datac + ' &',
-			3: './net/small_send.sh ' + randip_ho + ' &',
-			4: './net/send.sh ' + randip_ho + ' &',
-			5: './net/streaming_client.sh ' + randip_datac + ' &',
-			6: './net/server_connect.sh ' + randip_datac + ' &'
-		}
-		result = h.cmd(traffic.get(x, ' '))
+    for n in range(nm_ho):
+            time.sleep(1)
+            x = random.randint(0,6)
+            h = net.get('h{}'.format(n+1))
+            #DEBUGGING This is considering that we have 0 hosts in main network
+            #DEBUGGING One could send messages to himself
+            if datac > 0:
+                    randip_datac = '10.0.0.' + str(random.randint(1, datac*3))
+            else:
+                    randip_datac = '0.0.0.0'
+            randip_ho = '10.0.0.' + str(random.randint(datac + 1, nm_ho))
+            traffic = {
+                    0: ' ',
+                    1: './net/mail_receive.sh ' + randip_datac + ' &',
+                    2: './net/mail_send.sh ' + randip_datac + ' &',
+                    3: './net/small_send.sh ' + randip_ho + ' &',
+                    4: './net/send.sh ' + randip_ho + ' &',
+                    5: './net/streaming_client.sh ' + randip_datac + ' &',
+                    6: './net/server_connect.sh ' + randip_datac + ' &'
+            }
 
-	#DEBUGGING: leaving out broadcast
-	return
+            print "			Command type : " + str(x)
+            result = h.cmd(str(traffic.get(x, ' ')))
+            print "			 Done"
+
+    #DEBUGGING: leaving out broadcast
+    return
+
 
 def create_error(err, nm_ho, datac, net, sim_id, logger):
 
@@ -279,7 +281,7 @@ def run(topo, ip, config, config2, pred_error):
 	net.pingAll()
 
 	#Usually MainHosts is zero
-	nm_ho_sf = int(config.get('main','MainHosts'))
+	nm_ho_sf = 0
 	datac = int(config.get('main','Datacenters'))
 
 	#All datacenters will activate their servers
@@ -360,7 +362,7 @@ def init(pred_error):
 	ip = config.get('main','Ip')
 	link_type = config.get('main','Distribution')
 	nm_sw_sf = int(config.get('main','MainSwitches'))
-	nm_ho_sf = int(config.get('main','MainHosts'))
+	nm_ho_sf = 0
 	datac = int(config.get('main','Datacenters'))
 
 	topo = random_scalefree.RandomScaleFree(link_type, datac, nm_sw_sf, nm_ho_sf)

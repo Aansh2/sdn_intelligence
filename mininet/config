@@ -2,7 +2,6 @@
 Ip = 172.18.0.1
 Distribution = equal
 MainSwitches = 20
-MainHosts = 0
 Datacenters = 2
 MinutesRunning = 180
 Batch = 3

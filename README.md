@@ -38,8 +38,6 @@ Distribution = equal
 
 MainSwitches = 20
 
-MainHosts = 0
-
 Datacenters = 2
 
 MinutesRunning = 180

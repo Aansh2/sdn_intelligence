@@ -7,17 +7,17 @@ import logging
 import json
 import time
 
-error_dictionary = {1: {'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}}
-error_dictionary[2] = {'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {'Timestamp': ''}}
-error_dictionary[3] = {'Desc': 'A link has failed', 'Params': {'Interface_1': '', 'Interface_2': '', 'Timestamp': ''}}
-error_dictionary[4] = {'Desc': 'A switch has failed', 'Params': {'Switch': '', 'Timestamp': ''}}
-error_dictionary[5] = {'Desc': 'A server from the datacenter (if there are datacenters) has failed', 'Params': {'Host': '', 'Timestamp': ''}}
-error_dictionary[6] = {'Desc': 'All flows (except the CONTROLLER one) from a switch have been modified by changing the node-connector-output field', 'Params': {'Switch': '', 'Timestamp': ''}}
-error_dictionary[7] = {'Desc': 'All flow entries of a switch have changed their in-port match (if they have one)', 'Params': {'Switch': '', 'Timestamp': ''}}
-error_dictionary[8] = {'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
-error_dictionary[9] = {'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
-error_dictionary[10] = {'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
-error_dictionary[11] = {'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary = {1: {'err_type': '1', 'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}}
+error_dictionary[2] = {'err_type': '2', 'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {'Timestamp': ''}}
+error_dictionary[3] = {'err_type': '3', 'Desc': 'A link has failed', 'Params': {'Interface_1': '', 'Interface_2': '', 'Timestamp': ''}}
+error_dictionary[4] = {'err_type': '4', 'Desc': 'A switch has failed', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary[5] = {'err_type': '5', 'Desc': 'A server from the datacenter (if there are datacenters) has failed', 'Params': {'Host': '', 'Timestamp': ''}}
+error_dictionary[6] = {'err_type': '6', 'Desc': 'All flows (except the CONTROLLER one) from a switch have been modified by changing the node-connector-output field', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary[7] = {'err_type': '7', 'Desc': 'All flow entries of a switch have changed their in-port match (if they have one)', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary[8] = {'err_type': '8', 'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
+error_dictionary[9] = {'err_type': '9', 'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
+error_dictionary[10] = {'err_type': '10', 'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary[11] = {'err_type': '11', 'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
 
 error_dictionary['delay'] = 3
 
@@ -25,7 +25,7 @@ def send_report(err, parameters, sim_id, logger):
 	error_report = error_dictionary.get(err)
 	error_report['Params'] = parameters
 
-	logger.info(sim_id + " err " + str(json.dumps({err: error_report})))
+	logger.info(sim_id + " err " + str(json.dumps({'err': error_report})))
 
 	return 
 

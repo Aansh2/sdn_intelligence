@@ -142,8 +142,9 @@ def create_traffic(net, datac, nm_ho):
             }
 
             print "			Command type : " + str(x)
-            result = h.cmd(str(traffic.get(x, ' ')))
+            h.cmd(str(traffic.get(x, ' ')))
             print "			 Done"
+            time.sleep(1)
 
     #DEBUGGING: leaving out broadcast
     print "		End of iteration"

@@ -1,2 +1,6 @@
 #! /bin/sh
-watch -n 5 socat -u TCP:$1:9999,reuseaddr /dev/null
+while true
+do
+	socat -u TCP:$1:9999,reuseaddr /dev/null
+	sleep 5
+done

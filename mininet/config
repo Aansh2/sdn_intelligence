@@ -3,8 +3,10 @@ Ip = 172.18.0.1
 Distribution = equal
 MainSwitches = 20
 Datacenters = 2
-MinutesRunning = 180
-Batch = 3
-FailuresType = 0,5
+MinutesRunning = 90
+Batch = 12
+FailuresType = 1,2,3,4,5,6,7,8,9,10,11,0
 [extra1]
+Number = 2
+[extra2]
 Number = 1

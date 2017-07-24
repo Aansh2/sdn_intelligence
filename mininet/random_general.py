@@ -380,6 +380,7 @@ def init(pred_error):
 		n_networks = len(ex_net)-1
 		config2 = ConfigParser.ConfigParser()
 		config2.read('./repo_subnets')
+		topo_counter = 0
 
 		for i in range(n_networks):
 			nm_networks = int(config.get(ex_net[i+1], 'Number'))
@@ -387,9 +388,10 @@ def init(pred_error):
 				nm_sw = int(config2.get(ex_net[i+1],'Switches'))
 				nm_ho = int(config2.get(ex_net[i+1],'Hosts'))
 
-				extra_topos["topo{}".format(i+n)] = random_scalefree.RandomScaleFree(link_type, 0, nm_sw, nm_ho, namespace)
+				extra_topos["topo{}".format(topo_counter)] = random_scalefree.RandomScaleFree(link_type, 0, nm_sw, nm_ho, namespace)
 				namespace[0] += nm_sw
 				namespace[1] += nm_ho
+				topo_counter += 1
 
 		print "Building network..."
 		join = join_networks(topo, extra_topos, namespace[0], link_type)

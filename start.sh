@@ -11,5 +11,5 @@ sleep 25
 echo "OpenDayLight Platform should be running... It had enough time..."
 
 echo "Starting mininet simulator..."
-sudo docker run -it --rm --privileged -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /lib/modules:/lib/modules --name=mininet fernandobenayas/mininet
+sudo docker run -it --rm --privileged -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /lib/modules:/lib/modules --name=mininet mininet/prueba
 echo "Mininet Simulator running!."

@@ -208,6 +208,62 @@ def add_meter(node, rate):
 
 	return
 '''
+#UNUSED
+def block_switch(node):
+
+	node_dec = str(node)[1:]
+	print node_dec
+
+	config = ConfigParser.ConfigParser()
+	config.read('./config')
+	ip = config.get('main','Ip')
+
+	conn = httplib.HTTPConnection(ip+":8181")
+	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
+	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
+	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec), headers = headers)
+	r1 = conn.getresponse()
+	resp_xml = r1.read()
+
+	root = ET.fromstring(resp_xml)
+
+	for child in root.findall('{urn:opendaylight:inventory}node-connector'):
+		for subchild in child:
+			if subchild.tag == "{urn:opendaylight:inventory}id":
+				nodeconnector_id = subchild.text
+
+				print nodeconnector_id
+
+				conn2 = httplib.HTTPConnection(ip+":8181")
+				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/node-connector/"+str(nodeconnector_id)+"/flow-node-inventory:state", headers = headers)
+				r2 = conn2.getresponse()
+				resp2_xml = r2.read()
+				root2 = ET.fromstring(resp2_xml)
+
+				for node in root2.iter('{urn:opendaylight:flow:inventory}state'):
+					for subnode in node:
+						if subnode.tag == "{urn:opendaylight:flow:inventory}blocked":
+							subnode.text = "true"
+
+				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
+					root2.remove(node)
+
+				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(':ns2', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				#.replace(' xmlns="urn:opendaylight:port:statistics"', '').replace(' xmlns="urn:opendaylight:flow:inventory"', '')
+				print '****************'
+				print result
+				time.sleep(2)
+
+				conn2 = httplib.HTTPConnection(ip+":8181")
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
+				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/node-connector/"+str(nodeconnector_id)+"/flow-node-inventory:state", body = result, headers = headers2)
+				r2 = conn2.getresponse()
+				resp22 = r2.read()
+
+				print resp22
+
+	return
+
 def change_idletimeout(node, seconds):
 
 	node_dec = int(node, 16)

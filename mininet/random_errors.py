@@ -44,7 +44,7 @@ def send_report(err, parameters, sim_id, logger):
 		logger.info(sim_id + " fix " + str(json.dumps({'err': error_report})))
 
 	return 
-
+#DEBUGGING: Not used
 def encode_errors():
 	return error_dictionary
 
@@ -145,7 +145,6 @@ def add_meter(node, rate):
 	child.text = 'meter-kbps'
 	child = ET.SubElement(top, 'meter-band-headers')
 
-	
 	subchild = ET.SubElement(child, 'meter-band-header')
 	subchild_2 = ET.SubElement(subchild, 'band-id')
 	subchild_2.text = '0'

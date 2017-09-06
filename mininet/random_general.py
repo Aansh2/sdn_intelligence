@@ -124,41 +124,42 @@ def trim(topo):
 def create_traffic(net, datac, nm_ho, temp = False):
 
     for n in range(nm_ho):
-            x = random.randint(0,6)
-            h = net.get('h{}'.format(n+1))
-            #DEBUGGING This is considering that we have 0 hosts in main network
-            #DEBUGGING One could send messages to himself
-            if datac > 0:
-                    randip_datac = '10.0.0.' + str(random.randint(1, datac*3))
-            else:
-                    randip_datac = '0.0.0.0'
+        x = random.randint(0,6)
+        h = net.get('h{}'.format(n+1))
+        #DEBUGGING This is considering that we have 0 hosts in main network
+        #DEBUGGING One could send messages to himself
+        if datac > 0:
+        	randip_datac = '10.0.0.' + str(random.randint(1, datac*3))
+        else:
+        	randip_datac = '0.0.0.0'
 
-            randip_ho = '10.0.0.' + str(random.randint(datac + 1, nm_ho))
+        randip_ho = '10.0.0.' + str(random.randint(datac + 1, nm_ho))
 
-            if temp is True:
-	            traffic = {
-	                    0: ' ',
-	                    1: './net/mail_receive.sh ' + randip_datac + ' temp' + ' &',
-	                    2: './net/mail_send.sh ' + randip_datac + ' temp' +  ' &',
-	                    3: './net/small_send.sh ' + randip_ho + ' temp' +  ' &',
-	                    4: './net/send.sh ' + randip_ho + ' temp' +  ' &',
-	                    5: './net/streaming_client.sh ' + randip_datac + ' temp' +  ' &',
-	                    6: './net/server_connect.sh ' + randip_datac + ' temp' +  ' &'
-	            }
-	         else:
-	         	traffic = {
-	                    0: ' ',
-	                    1: './net/mail_receive.sh ' + randip_datac + ' &',
-	                    2: './net/mail_send.sh ' + randip_datac + ' &',
-	                    3: './net/small_send.sh ' + randip_ho + ' &',
-	                    4: './net/send.sh ' + randip_ho + ' &',
-	                    5: './net/streaming_client.sh ' + randip_datac + ' &',
-	                    6: './net/server_connect.sh ' + randip_datac + ' &'
-	            }
-            print "			Command type : " + str(x)
-            h.cmd(str(traffic.get(x, ' ')))
-            print "			 Done"
-            time.sleep(1)
+        if temp is True:
+            traffic = {
+                    0: ' ',
+                    1: './net/mail_receive.sh ' + randip_datac + ' temp' + ' &',
+                    2: './net/mail_send.sh ' + randip_datac + ' temp' +  ' &',
+                    3: './net/small_send.sh ' + randip_ho + ' temp' +  ' &',
+                    4: './net/send.sh ' + randip_ho + ' temp' +  ' &',
+                    5: './net/streaming_client.sh ' + randip_datac + ' temp' +  ' &',
+                    6: './net/server_connect.sh ' + randip_datac + ' temp' +  ' &'
+            }
+
+        else:
+         	traffic = {
+                    0: ' ',
+                    1: './net/mail_receive.sh ' + randip_datac + ' &',
+                    2: './net/mail_send.sh ' + randip_datac + ' &',
+                    3: './net/small_send.sh ' + randip_ho + ' &',
+                    4: './net/send.sh ' + randip_ho + ' &',
+                    5: './net/streaming_client.sh ' + randip_datac + ' &',
+                    6: './net/server_connect.sh ' + randip_datac + ' &'
+            }
+        print "			Command type : " + str(x)
+        h.cmd(str(traffic.get(x, ' ')))
+        print "			 Done"
+        time.sleep(1)
 
     #DEBUGGING: leaving out broadcast
     print "		End of iteration"
@@ -438,10 +439,12 @@ def run(topo, ip, config, config2, pred_error):
 	hdlr.setFormatter(formatter)
 	logger.addHandler(hdlr)
 	logger.setLevel(logging.INFO)
-	logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_errors())))
+	#DEBUGGING: CHANGED INITIAL MESSAGE
+	#logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_errors())))
+	logger.info(sim_id + " start " + str("{ Network started }"))
 	
 	print "Giving time for the collector to catch up..."
-	#time.sleep(25)
+	time.sleep(25)
 
 	print "Beginning test..."
 

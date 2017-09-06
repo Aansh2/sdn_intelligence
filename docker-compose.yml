@@ -1,0 +1,23 @@
+version: '3'
+services:
+  opendaylight:
+    image: fernandobenayas/opendaylight:latest
+    container_name: opendaylight
+    ports:
+     - "6633:6633"
+     - "8181:8181"
+     - "8101:8101"
+  mininet:
+    image: fernandobenayas/mininet
+    container_name: mininet
+    depends_on:
+     - opendaylight
+    tty: true
+    network_mode: "bridge"
+    privileged: true
+    environment:
+     - DISPLAY
+     - XTERM
+    volumes:
+     - /tmp/.X11-unix:/tmp/.X11-unix
+     - /lib/modules:/lib/modules

@@ -209,6 +209,7 @@ def add_meter(node, rate):
 	return
 '''
 #UNUSED
+'''
 def block_switch(node):
 
 	node_dec = str(node)[1:]
@@ -263,7 +264,7 @@ def block_switch(node):
 				print resp22
 
 	return
-
+'''
 def change_idletimeout(node, seconds):
 
 	node_dec = int(node, 16)

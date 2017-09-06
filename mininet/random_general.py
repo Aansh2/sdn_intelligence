@@ -18,6 +18,7 @@ from mininet.node import Node
 from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.clean import cleanup
+from mininet.node import OVSSwitch
 
 #Randomize bw of access link
 def random_access(self, link_type="equal"):
@@ -120,7 +121,7 @@ def trim(topo):
 		counter = 0
 		other_switch = ''
 
-def create_traffic(net, datac, nm_ho):
+def create_traffic(net, datac, nm_ho, temp = False):
 
     for n in range(nm_ho):
             x = random.randint(0,6)
@@ -131,17 +132,29 @@ def create_traffic(net, datac, nm_ho):
                     randip_datac = '10.0.0.' + str(random.randint(1, datac*3))
             else:
                     randip_datac = '0.0.0.0'
-            randip_ho = '10.0.0.' + str(random.randint(datac + 1, nm_ho))
-            traffic = {
-                    0: ' ',
-                    1: './net/mail_receive.sh ' + randip_datac + ' &',
-                    2: './net/mail_send.sh ' + randip_datac + ' &',
-                    3: './net/small_send.sh ' + randip_ho + ' &',
-                    4: './net/send.sh ' + randip_ho + ' &',
-                    5: './net/streaming_client.sh ' + randip_datac + ' &',
-                    6: './net/server_connect.sh ' + randip_datac + ' &'
-            }
 
+            randip_ho = '10.0.0.' + str(random.randint(datac + 1, nm_ho))
+
+            if temp is True:
+	            traffic = {
+	                    0: ' ',
+	                    1: './net/mail_receive.sh ' + randip_datac + ' temp' + ' &',
+	                    2: './net/mail_send.sh ' + randip_datac + ' temp' +  ' &',
+	                    3: './net/small_send.sh ' + randip_ho + ' temp' +  ' &',
+	                    4: './net/send.sh ' + randip_ho + ' temp' +  ' &',
+	                    5: './net/streaming_client.sh ' + randip_datac + ' temp' +  ' &',
+	                    6: './net/server_connect.sh ' + randip_datac + ' temp' +  ' &'
+	            }
+	         else:
+	         	traffic = {
+	                    0: ' ',
+	                    1: './net/mail_receive.sh ' + randip_datac + ' &',
+	                    2: './net/mail_send.sh ' + randip_datac + ' &',
+	                    3: './net/small_send.sh ' + randip_ho + ' &',
+	                    4: './net/send.sh ' + randip_ho + ' &',
+	                    5: './net/streaming_client.sh ' + randip_datac + ' &',
+	                    6: './net/server_connect.sh ' + randip_datac + ' &'
+	            }
             print "			Command type : " + str(x)
             h.cmd(str(traffic.get(x, ' ')))
             print "			 Done"
@@ -150,7 +163,6 @@ def create_traffic(net, datac, nm_ho):
     #DEBUGGING: leaving out broadcast
     print "		End of iteration"
     return
-
 
 def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 	#DEBUGGING I'm supposing zero hosts in the main network
@@ -163,23 +175,35 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 		ip_datac = '0.0.0.0'
 
 	if err == 1:
-		print 'Error %d in host %s' % (err, host)	
+		print 'Error %d in host %s' % (err, host)
 		for n in range(0, 6):
 			time.sleep(1)
 			print '		 Iteration %d' % (n+1)
 			h = net.get('h{}'.format(host))
-			h.cmd('./net/streaming_client.sh ' + ip_datac + ' &')
+			h.cmd('./net/streaming_client.sh ' + ip_datac + ' temp' +  ' &')
 
 		random_errors.send_report(err, {'Host': 'h{}'.format(host), 'Timestamp': str(datetime.now())}, sim_id, logger)
+
+		time.sleep(60)
+
+		print "Fixing traffic-consuming host error"
+
+		random_errors.send_report(str(err)+'f', {'Host': 'h{}'.format(host), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 2:
 		print 'Error %d ' % err
 		for n in range(0, 3):
 			print '		 Iteration %d' % (n+1)
 			time.sleep(1)
-			create_traffic(net, datac, nm_ho)
+			create_traffic(net, datac, nm_ho, temp=True)
 
 		random_errors.send_report(err, {'Timestamp': str(datetime.now())}, sim_id, logger)
+
+		time.sleep(60)
+
+		print "Fixing general traffic error"
+
+		random_errors.send_report(str(err) +'f', {'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 3:
 		print 'Error %d' % err
@@ -199,14 +223,28 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 
 	elif err == 4:
 		print 'Error %d' % err
+
 		switches_list = net.switches
-		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-		print 'switch down: %s' % switch_down.name
+		switch_down = net.switches[random.randint(0, len(switches_list)-1)]
+		'''
+		print type(switch_down)
+		print switch_down.name
+
+		switch_down.stop(False)
+
+		time.sleep(5)
+		CLI(net)
+
+		switch_down.start([ controller ])
+
+		CLI(net)
+
 
 		#'True' if you want to delete the interfaces too (you wont be able to restart it!!)
 		#net.switch.stop(switch_down, False)
 		#random_errors.block_switch(switch_down.name)
 		
+		'''
 		deleted_links = []
 
 		links_list = net.links
@@ -225,6 +263,9 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 			net.configLinkStatus(str(deleted.intf1.node), str(deleted.intf2.node), 'up')
 
 		random_errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+
+		#switch_down_ovs.stop(False)
+		
 
 	elif err == 5:
 		#DEBUGGING: DATACENTERS = 0
@@ -400,7 +441,7 @@ def run(topo, ip, config, config2, pred_error):
 	logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_errors())))
 	
 	print "Giving time for the collector to catch up..."
-	time.sleep(25)
+	#time.sleep(25)
 
 	print "Beginning test..."
 

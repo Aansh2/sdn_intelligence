@@ -43,7 +43,8 @@ def send_report(err, parameters, sim_id, logger):
 	else:
 		logger.info(sim_id + " fix " + str(json.dumps({'err': error_report})))
 
-	return 
+	return
+
 #DEBUGGING: Not used
 def encode_errors():
 	return error_dictionary
@@ -97,9 +98,6 @@ def change_flow(node):
 				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
 				
 	return old_xml
-
-
-
 
 def fix_change_flow(node, dictionary):
 	node_dec = int(node, 16)
@@ -452,7 +450,9 @@ def delete_flow(node):
 	r1 = conn.getresponse()
 
 	resp_xml = r1.read()
+	old_xml = resp_xml
 	flow_id = None
+	old_xml = {}
 
 	root = ET.fromstring(resp_xml)
 
@@ -460,11 +460,13 @@ def delete_flow(node):
 		for subchild in child:
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id":
 				flow_id = subchild.text
-
+				
 				conn2 = httplib.HTTPConnection(ip+":8181")
 				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
 				r2 = conn2.getresponse()
 				resp2_xml = r2.read()
+				old_xml[flow_id] = resp2_xml
+
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
@@ -484,7 +486,39 @@ def delete_flow(node):
 				r3 = conn3.getresponse()
 				resp3_xml = r3.read()
 				
+	return old_xml
+
+'''
+def fix_delete_flow(node, old_xml):
+	node_dec = int(node, 16)
+
+	config = ConfigParser.ConfigParser()
+	config.read('./config')
+	ip = config.get('main','Ip')
+	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
+
+	print old_xml
+
+	root2 = ET.fromstring(old_xml)
+
+	for child in root2.findall('{urn:opendaylight:flow:table:statistics}flow-table-statistics'):
+		root2.remove(child)
+
+	for child in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
+		print '****************************************'
+		root2.remove(child)		
+
+	result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+	result.replace('ns2:', '').replace(':ns2', '').replace(' xmlns="urn:opendaylight:flow:table:statistics"','')
+
+	conn2 = httplib.HTTPConnection(ip+":8181")
+	headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
+	conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", body = result, headers = headers2)
+	r2 = conn2.getresponse()
+	print r2.read()
+
 	return
+'''
 
 def change_inport(node):
 	node_dec = int(node, 16)
@@ -599,8 +633,6 @@ def delete_lldp_flow(node):
 	headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
 	conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0", body = result, headers = headers2)
 
-	#DEBUGGING
-	print conn2.getresponse().read()
 	return old_xml
 
 def fix_delete_lldp_flow(node, old_xml):

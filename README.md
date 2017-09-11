@@ -1,9 +1,16 @@
-# sdn_intelligence
-Execute start.sh to deploy the scenario
+# SDN INTELLIGENCE
+Use docker-compose in the docker-compose.yml directory to start up the scenario
 
-Once in the mininet CLI, 
+```bash
+sudo docker-compose up
+```
+Then, attach into the mininet terminal
 
-Script execution:
+```
+sudo docker exec -ti mininet bash
+```
+
+Once in the mininet CLI, change the config and repo_subnet files according to your preferences (see examples below), and execute simulate.py:
 
 ```sh
 py simulate.py

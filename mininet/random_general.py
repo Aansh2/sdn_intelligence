@@ -226,57 +226,18 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 		switch_down = net.switches[random.randint(0, len(switches_list)-1)]
 		print 'switch down: %s' % switch_down.name
 
-		'''
-		print type(switch_down)
-		print switch_down.name
-
-		switch_down.stop(False)
-
-		time.sleep(5)
-		CLI(net)
-
-		switch_down.start([ controller ])
-
-		CLI(net)
-
-
-		#'True' if you want to delete the interfaces too (you wont be able to restart it!!)
-		#net.switch.stop(switch_down, False)
-		#random_errors.block_switch(switch_down.name)
-		'''
-
-		'''
-		deleted_links = []
-
-		links_list = net.links
-		for link in links_list:
-			if (switch_down.name in str(link.intf1)) or (switch_down.name in str(link.intf2)):
-				deleted_links.append(link)
-				net.configLinkStatus(str(link.intf1.node), str(link.intf2.node), 'down')
-
-		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-
-		time.sleep(5)
-		'''
-
 		old_xml = random_errors.delete_flow(switch_down.dpid)
+		old_lldp = random_errors.delete_lldp_flow(switch_down.dpid)
+
 		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 		time.sleep(5)
 		print 'Fixing switch down error'
 
+		random_errors.fix_delete_lldp_flow(switch_down.dpid, old_lldp)
 		random_errors.fix_change_flow(switch_down.dpid, old_xml)
+
 		random_errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-
-		'''
-		for deleted in deleted_links:
-			net.configLinkStatus(str(deleted.intf1.node), str(deleted.intf2.node), 'up')
-
-		random_errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-		'''
-
-		#switch_down_ovs.stop(False)
-		
 
 	elif err == 5:
 		#DEBUGGING: DATACENTERS = 0
@@ -374,12 +335,14 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'Switch whose flows have been deleted: %s' % switch_down.dpid
 		
-		random_errors.delete_flow(switch_down.dpid)
+		old_xml = random_errors.delete_flow(switch_down.dpid)
 
 		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		time.sleep(5)
 		print 'Fixing deleted flows error'
 
+
+		random_errors.fix_change_flow(switch_down.dpid, old_xml)
 		random_errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 11:
@@ -448,9 +411,7 @@ def run(topo, ip, config, config2, pred_error):
 	hdlr.setFormatter(formatter)
 	logger.addHandler(hdlr)
 	logger.setLevel(logging.INFO)
-	#DEBUGGING: CHANGED INITIAL MESSAGE
-	#logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_errors())))
-	logger.info(sim_id + " start " + str("{ Network started }"))
+	logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_delay())))
 	
 	print "Giving time for the collector to catch up..."
 	time.sleep(25)
@@ -475,10 +436,6 @@ def run(topo, ip, config, config2, pred_error):
 	net.stop()
 
 	return
-
-	#DEBUGGING
-	#CLI(net)
-	#return
 
 def init(pred_error):
 

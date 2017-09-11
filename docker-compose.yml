@@ -8,7 +8,7 @@ services:
      - "8181:8181"
      - "8101:8101"
   mininet:
-    image: fernandobenayas/mininet
+    image: mininet/prueba
     container_name: mininet
     depends_on:
      - opendaylight

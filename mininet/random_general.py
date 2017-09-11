@@ -215,7 +215,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 		time.sleep(5)
 		print "Fixing link down"
 	
-		net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf1.node), "up")
+		net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf2.node), "up")
 		random_errors.send_report(str(err)+'f', {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 4:

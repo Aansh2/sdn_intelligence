@@ -260,7 +260,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 			random_errors.send_report(err, {'Host': host_down.name, 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 			time.sleep(5)
-			print 'Fixing switch down error'
+			print 'Fixing host down error'
 
 			for deleted in deleted_links:
 				net.configLinkStatus(str(deleted.intf1.node), str(deleted.intf2.node), 'up')

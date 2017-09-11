@@ -90,7 +90,6 @@ def join_networks(main_network, extra_networks, namespace, link_type):
 
 	return [main, namespace]
 
-
 def trim(topo):
 	switches = topo.switches()
 	links = topo.links()
@@ -210,7 +209,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 		link_down = links_list[random.randint(0, len(links_list)-1)]
 		print 'link down: %s - %s' % (link_down.intf1, link_down.intf2)
 
-		net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf1.node), "down")
+		net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf2.node), "down")
 		random_errors.send_report(err, {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 		time.sleep(5)

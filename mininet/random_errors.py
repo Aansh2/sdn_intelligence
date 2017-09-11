@@ -391,8 +391,6 @@ def delete_flow(node):
 	r1 = conn.getresponse()
 
 	resp_xml = r1.read()
-	#DEBUGGING
-	#old_xml = resp_xml
 	flow_id = None
 	old_xml = {}
 

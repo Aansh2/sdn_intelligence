@@ -121,7 +121,6 @@ def trim(topo):
 		other_switch = ''
 
 def create_traffic(net, datac, nm_ho, temp = False):
-
     for n in range(nm_ho):
         x = random.randint(0,6)
         h = net.get('h{}'.format(n+1))
@@ -410,7 +409,7 @@ def run(topo, ip, config, config2, pred_error):
 	hdlr.setFormatter(formatter)
 	logger.addHandler(hdlr)
 	logger.setLevel(logging.INFO)
-	logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_delay())))
+	logger.info(sim_id + " start " + str(json.dumps(random_errors.encode_errors())))
 	
 	print "Giving time for the collector to catch up..."
 	time.sleep(25)

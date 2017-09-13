@@ -2,6 +2,7 @@ import ConfigParser
 import random_general
 import os
 import math
+
 if __name__ == '__main__':
 
 	config = ConfigParser.ConfigParser()

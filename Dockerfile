@@ -33,8 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && mv /usr/sbin/tcpdump /usr/bin/tcpdump \
  && chmod +x /entrypoint.sh \
  && chmod -R +x ./net \
- && pip install -I networkx==2.0 \
-    matplotlib
+ && pip install -I networkx==1.11 \
+ && pip install matplotlib
 
 RUN git config --global url.https://github.com/.insteadOf git://github.com/
 RUN git clone https://github.com/mininet/mininet

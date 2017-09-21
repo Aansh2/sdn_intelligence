@@ -462,7 +462,7 @@ def change_inport(node):
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}in-port'):
-					port = node.text.replace('openflow:', '').replace(str(node_dec), '').replace(':', '')
+					port = node.text.split(':')[2]
 					if int(port) > 0:
 						new_port = str(int(port)-1)
 					else:

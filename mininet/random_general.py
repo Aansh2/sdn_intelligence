@@ -238,7 +238,8 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 		random_errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 5:
-		#DEBUGGING: DATACENTERS = 0
+		#DEBUGGING: NOT DATACENTERS = 0
+		# INCLUDING DATACENTERS AS HOSTS
 		if datac != 0:
 			print 'Error %d' % err
 			hosts_list = net.hosts
@@ -251,8 +252,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 			for link in links_list:
 				if (host_down.name + '-' in str(link.intf1)) or (host_down.name + '-' in str(link.intf2)):
 					deleted_links.append(link)
-					print link.intf1
-					print link.intf2
+					print link
 					net.configLinkStatus(str(link.intf1.node), str(link.intf2.node), 'down')
 
 			random_errors.send_report(err, {'Host': host_down.name, 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -481,5 +481,4 @@ def init(pred_error):
 		namespace[0] = join[1]
 
 	run(topo, ip, config, config2, pred_error)
-
 	return

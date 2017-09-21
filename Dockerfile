@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && mv /usr/sbin/tcpdump /usr/bin/tcpdump \
  && chmod +x /entrypoint.sh \
  && chmod -R +x ./net \
- && pip install networkx \
+ && pip install -I networkx==2.0 \
     matplotlib
 
 RUN git config --global url.https://github.com/.insteadOf git://github.com/

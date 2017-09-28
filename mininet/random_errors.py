@@ -31,8 +31,6 @@ error_dictionary['9f'] = {'err_type': '9', 'Desc': 'A hard-timeout has been aded
 error_dictionary['10f'] = {'err_type': '10', 'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary['11f'] = {'err_type': '11', 'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
 
-error_dictionary['delay'] = 3
-
 def send_report(err, parameters, sim_id, logger):
 	error_report = error_dictionary.get(err)
 	error_report['Params'] = parameters
@@ -44,6 +42,12 @@ def send_report(err, parameters, sim_id, logger):
 	return
 
 def encode_errors():
+
+	config = ConfigParser.ConfigParser()
+	config.read('./config')
+	coll_int = config.get('main','CollectorInterval')
+	error_dictionary['delay'] = int(coll_int)
+
 	return error_dictionary
 
 def change_flow(node):

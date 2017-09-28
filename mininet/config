@@ -6,6 +6,7 @@ Datacenters = 2
 MinutesRunning = 30
 Batch = 2
 FailuresType = 0
-ErrorInterval = 10
+ErrorInterval = 20
+CollectorInterval = 10
 [extra1]
 Number = 2

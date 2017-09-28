@@ -33,6 +33,7 @@ network. "No" otherwise.
 - Batch: number of simulations you want to execute
 - FailuresType: type of failures you want to simulate in your network
 - ErrorInterval: amount of seconds between the execution of two failures
+- CollectorInterval: amount of seconds between the execution of two info requests from collector to opendaylight
 
 It also will have another section for each extra network.
 
@@ -54,7 +55,9 @@ Batch = 3
 
 FailuresType = 0,5
 
-ErrorInterval = 10
+ErrorInterval = 20
+
+CollectorInterval = 10
 
 [extra1]
 

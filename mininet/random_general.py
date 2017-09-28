@@ -239,7 +239,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 
 	elif err == 5:
 		#DEBUGGING: NOT DATACENTERS = 0
-		# INCLUDING DATACENTERS AS HOSTS
+		#INCLUDING DATACENTERS AS HOSTS
 		if datac != 0:
 			print 'Error %d' % err
 			hosts_list = net.hosts
@@ -360,9 +360,9 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 
 	return
 
-def run(topo, ip, config, config2, pred_error):
+def run(topo, ip, config, config2, pred_error, err_int = 5):
 
-	cont = RemoteController('c1', ip=ip, port = 6633)
+	cont = RemoteController('c1', ip=ip, port=6633)
 	net = Mininet(topo=topo, link=TCLink, controller=cont)
 	net.start()
 	net.pingAll()
@@ -420,7 +420,7 @@ def run(topo, ip, config, config2, pred_error):
 	now_timestamp = datetime.now()
 
 	while (now_timestamp - orig_timestamp).total_seconds() < minutes*60:
-		time.sleep(5)
+		time.sleep(err_int)
 		if pred_error != 0:
 			err = pred_error
 			create_error(err, nm_ho, datac, net, sim_id, logger, cont)
@@ -447,6 +447,7 @@ def init(pred_error):
 	nm_sw_sf = int(config.get('main','MainSwitches'))
 	nm_ho_sf = 0
 	datac = int(config.get('main','Datacenters'))
+	err_int = int(config.get('main', 'ErrorInterval'))
 
 	topo = random_scalefree.RandomScaleFree(link_type, datac, nm_sw_sf, nm_ho_sf)
 	if datac > 0:
@@ -480,5 +481,5 @@ def init(pred_error):
 		topo = join[0]
 		namespace[0] = join[1]
 
-	run(topo, ip, config, config2, pred_error)
+	run(topo, ip, config, config2, pred_error, err_int)
 	return

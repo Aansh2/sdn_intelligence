@@ -32,6 +32,7 @@ network. "No" otherwise.
 - MinutesRunning: amount of time (in minutes) you want each simulation running
 - Batch: number of simulations you want to execute
 - FailuresType: type of failures you want to simulate in your network
+- ErrorInterval: amount of seconds between the execution of two failures
 
 It also will have another section for each extra network.
 
@@ -52,6 +53,8 @@ MinutesRunning = 180
 Batch = 3
 
 FailuresType = 0,5
+
+ErrorInterval = 10
 
 [extra1]
 

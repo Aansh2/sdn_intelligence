@@ -119,7 +119,7 @@ def fix_change_flow(node, dictionary):
 
 	return
 
-#NOT WORKING with OvS 2.5.2 (doesn't implements meter features)
+#NOT WORKING with OvS 2.5.2 (doesn't implement meter features)
 '''
 def add_meter(node, rate):
 	node_dec = int(node, 16)

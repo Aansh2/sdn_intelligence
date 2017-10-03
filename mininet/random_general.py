@@ -339,7 +339,6 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller):
 		time.sleep(5)
 		print 'Fixing deleted flows error'
 
-
 		random_errors.fix_change_flow(switch_down.dpid, old_xml)
 		random_errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 

@@ -466,13 +466,20 @@ def change_inport(node):
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}in-port'):
-					port = node.text.split(':')[2]
+					is_carbon_distribution = False
+					try:
+						port = node.text.split(':')[2]
+					except IndexError:
+						port = node.text
+						is_carbon_distribution = True
 					if int(port) > 0:
 						new_port = str(int(port)-1)
 					else:
 						new_port = str(int(port)+1)
-					node.text = 'openflow:'+str(node_dec)+':'+str(new_port)
-
+					if not is_carbon_distribution:
+						node.text = 'openflow:'+str(node_dec)+':'+str(new_port)
+					else:
+						node.text = str(new_port)
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 

@@ -2,6 +2,7 @@ import ConfigParser
 import random_general
 import os
 import math
+import socket
 
 if __name__ == '__main__':
 

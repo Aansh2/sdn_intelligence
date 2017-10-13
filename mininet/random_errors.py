@@ -6,6 +6,7 @@ import random
 import logging
 import json
 import time
+import os
 
 error_dictionary = {1: {'err_type': '1', 'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}}
 error_dictionary[2] = {'err_type': '2', 'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {'Timestamp': ''}}
@@ -49,6 +50,13 @@ def encode_errors():
 	error_dictionary['delay'] = int(coll_int)
 
 	return error_dictionary
+
+def check_pass():
+	collector_pass = open('/root/pass/permission', 'r').readline()
+	if "GREEN" in string(collector_pass):
+		return True
+	else:
+		return False
 
 def change_flow(node):
 	node_dec = int(node, 16)
@@ -404,7 +412,7 @@ def delete_flow(node):
 		for subchild in child:
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
-				
+
 				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
 				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
 				r2 = conn2.getresponse()
@@ -423,7 +431,7 @@ def delete_flow(node):
 				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
 				r2 = conn2.getresponse()
 				resp2_xml = r2.read()
-				
+
 				time.sleep(2)
 
 				conn3 = httplib.HTTPConnection(ip, 8181, timeout=10000)
@@ -431,6 +439,9 @@ def delete_flow(node):
 				conn3.request("DELETE", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers2)
 				r3 = conn3.getresponse()
 				resp3_xml = r3.read()
+
+				time.sleep(2)
+
 
 	return old_xml
 

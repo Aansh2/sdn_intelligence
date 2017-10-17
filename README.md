@@ -24,7 +24,9 @@ Configuration is determined by **config** and **repo_subnets** files. Config mus
 - Distribution: distribution of link bandwidth between hosts and network
 	- equal: uniform distribution
 	- badwifi, wifi, xdsl, fiber50, fiber300: gaussian distribution centered at 3, 10, 20, 50 or 300 Mbps
-
+- Seed: list of seeds you want to use in the creaton of the network 'None' if you do not want
+to provide any seed. In case you provide them, the first one will be used for the first simulation, the second one
+for the second simulation, etc.
 - MainSwitches: number of switches in the core network
 - MainHosts: number of hosts directly connected to the core network
 - Datacenters: number of datacenters in the core network
@@ -33,7 +35,7 @@ network. "No" otherwise.
 - Batch: number of simulations you want to execute
 - FailuresType: type of failures you want to simulate in your network
 - ErrorInterval: amount of seconds between the execution of two failures
-- CollectorInterval: amount of seconds between the execution of two info requests from collector to opendaylight
+- CollectorInterval: " " " " two events of data mining
 
 It also will have another section for each extra network.
 
@@ -44,6 +46,8 @@ It also will have another section for each extra network.
 Ip = 172.17.0.2
 
 Distribution = equal
+
+Seed = None
 
 MainSwitches = 20
 

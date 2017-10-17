@@ -53,10 +53,11 @@ def encode_errors():
 
 def check_pass():
 	collector_pass = open('/root/pass/permission', 'r').readline()
-	if "GREEN" in string(collector_pass):
+	if "GREEN" in str(collector_pass):
 		return True
 	else:
 		return False
+		print "Waiting for traffic light to turn green..."
 
 def change_flow(node):
 	node_dec = int(node, 16)

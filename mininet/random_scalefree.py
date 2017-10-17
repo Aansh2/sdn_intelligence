@@ -97,12 +97,11 @@ def random_access(link_type):
 #Creates a random scale-free network scheme
 class RandomScaleFree(Topo):
 
-	def __init__(self, link_type= "equal", datac = 0, n=100, h=10, namespace = None):
+	def __init__(self, seed, link_type = "equal", datac = 0, n=100, h=10, namespace = None):
 		
 		Topo.__init__(self)
-
 		G=nx.Graph()
-		G=nx.scale_free_graph(n)
+		G=nx.scale_free_graph(n=n, seed=int(seed))
 		topify(self, G, h, link_type, namespace)
 		if datac > 0:
 			add_datacenter(self, n, h, datac)

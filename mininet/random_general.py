@@ -464,7 +464,7 @@ def run(topo, ip, config, config2, pred_error, err_int = 10):
 
 	return
 
-def init(pred_error):
+def init(pred_error, seed = None):
 
 	cleanup()
 
@@ -478,7 +478,11 @@ def init(pred_error):
 	datac = int(config.get('main','Datacenters'))
 	err_int = int(config.get('main', 'ErrorInterval'))
 
-	topo = random_scalefree.RandomScaleFree(link_type, datac, nm_sw_sf, nm_ho_sf)
+	if seed == None or 'None' in seed:
+		seed = random.randint(1, 10000)
+	print '			Seed = %s' % seed
+
+	topo = random_scalefree.RandomScaleFree(seed, link_type, datac, nm_sw_sf, nm_ho_sf)
 	if datac > 0:
 		namespace = [nm_sw_sf+3*datac, nm_ho_sf+3*datac]
 	else:
@@ -500,7 +504,7 @@ def init(pred_error):
 				nm_sw = int(config2.get(ex_net[i+1],'Switches'))
 				nm_ho = int(config2.get(ex_net[i+1],'Hosts'))
 
-				extra_topos["topo{}".format(topo_counter)] = random_scalefree.RandomScaleFree(link_type, 0, nm_sw, nm_ho, namespace)
+				extra_topos["topo{}".format(topo_counter)] = random_scalefree.RandomScaleFree(seed, link_type, 0, nm_sw, nm_ho, namespace)
 				namespace[0] += nm_sw
 				namespace[1] += nm_ho
 				topo_counter += 1

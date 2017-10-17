@@ -1,6 +1,7 @@
 [main]
 Ip = 172.18.0.1
 Distribution = equal
+Seed = None
 MainSwitches = 20
 Datacenters = 2
 MinutesRunning = 30

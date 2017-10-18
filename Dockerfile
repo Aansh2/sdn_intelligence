@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python-setuptools \
     python-matplotlib \
     vim \
+    vlc \
     x11-xserver-utils \
     xterm \
     git-all\

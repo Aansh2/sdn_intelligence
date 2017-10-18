@@ -7,6 +7,7 @@ from mininet.net import Mininet
 # Creates a random scale-free network scheme
 class RandomScaleFree(Topo):
 
+	# Constructor
 	def __init__(self, seed, link_type = "equal", datac = 0, n=100, h=10, namespace = None):
 		Topo.__init__(self)
 		G=nx.Graph()
@@ -55,7 +56,7 @@ class RandomScaleFree(Topo):
 				hosts.append(self.addHost("h{}".format(h+1)))
 			links.append(self.addLink(random.choice(switches), hosts[len(hosts)-1], bw=self.random_access(link_type),delay=lat))
 			
-	# Creates and appends datacenters
+	# Creates and appends datacenters into the mininet topology previously created
 	def add_datacenter(self, n_sw, n_ho, datac):
 
 		sw_connect = [random.choice(self.switches()), random.choice(self.switches()),
@@ -75,7 +76,7 @@ class RandomScaleFree(Topo):
 					self.addLink("h{}".format(n+1+n_ho+d*3), 's{}'.format(n_sw+m+1+d*3), bw = 1000,
 					lat = '3ms')
 
-	#Randomize access bandwidth of hosts
+	# Randomize selection of access bandwidth in hosts
 	def random_access(self, link_type):
 		type_id = 0
 

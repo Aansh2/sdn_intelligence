@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+#from collections import OrderedDict
 import httplib
 import base64
 import ConfigParser
@@ -7,6 +8,7 @@ import logging
 import json
 import time
 import os
+import test
 
 error_dictionary = {1: {'err_type': '1', 'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}}
 error_dictionary[2] = {'err_type': '2', 'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {'Timestamp': ''}}
@@ -32,47 +34,84 @@ error_dictionary['9f'] = {'err_type': '9', 'Desc': 'A hard-timeout has been aded
 error_dictionary['10f'] = {'err_type': '10', 'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary['11f'] = {'err_type': '11', 'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
 
+# Send error and fix reports
 def send_report(err, parameters, sim_id, logger):
 	error_report = error_dictionary.get(err)
 	error_report['Params'] = parameters
-
 	if isinstance(err, (int, long)):
 		logger.info(sim_id + " err " + str(json.dumps({'err': error_report})))
 	else:
 		logger.info(sim_id + " fix " + str(json.dumps({'err': error_report})))
 	return
 
-def encode_errors():
+# Communicates with Opendaylight
+def odl_comm(params, headers=None, timeout=1000, body=None):
+	config = ConfigParser.ConfigParser()
+	config.read('./config')
+	ip = str(config.get('main','Ip'))
+	# conn = httplib.HTTPConnection(ip, 8181, timeout=timeout)
+	conn = httplib.HTTPConnection(ip, 8181)
+	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
+	if headers == None:
+		headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
+	if body == None:
+		conn.request(str(params[0]), str(params[1]), headers=headers)
+	else:
+		conn.request(str(params[0]), str(params[1]), headers=headers, body=body)
+	resp = conn.getresponse().read()
+	conn.close()
+	return resp
 
+# Sends error_dictionary
+def encode_errors():
 	config = ConfigParser.ConfigParser()
 	config.read('./config')
 	coll_int = config.get('main','CollectorInterval')
 	error_dictionary['delay'] = int(coll_int)
-
 	return error_dictionary
 
+# It checks if the 'collector' module has given its permission
+# for us to modifiy the opendaylight database
 def check_pass():
 	collector_pass = open('/root/pass/permission', 'r').readline()
 	if "GREEN" in str(collector_pass):
 		return True
 	else:
-		return False
 		print "Waiting for traffic light to turn green..."
+		return False
+		
+# Initial push of all flow data in operational database into config database
+# in order to optimize some of the methods below this one
+def config_push(node):
+
+	node_dec = int(node, 16)
+	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
+	flow_id = None
+	old_xml = {}
+
+	root = ET.fromstring(resp_xml)
+
+	for child in root.findall('{urn:opendaylight:flow:inventory}flow'):
+		for subchild in child:
+			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
+				flow_id = subchild.text
+				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
+				old_xml[flow_id] = resp2_xml
+
+				root2 = ET.fromstring(resp2_xml)
+				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
+					root2.remove(node)
+
+				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+				resp2_xml = odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
+	return
+
 
 def change_flow(node):
 	node_dec = int(node, 16)
-	
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-
-	conn = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
-	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
-	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", headers = headers)
-
-	r1 = conn.getresponse()
-	resp_xml = r1.read()
+	resp_xml = odl_comm(params = ('GET', "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	old_xml = {}
 	flow_id = None
 
@@ -82,11 +121,7 @@ def change_flow(node):
 		for subchild in child:
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
-				r2 = conn2.getresponse()
-				resp2_xml = r2.read()
+				resp2_xml = odl_comm(params = ('GET', "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
 				old_xml[flow_id] = resp2_xml
 				root2 = ET.fromstring(resp2_xml)
 
@@ -94,28 +129,18 @@ def change_flow(node):
 				for node in root2.iter('{urn:opendaylight:flow:inventory}output-node-connector'):
 					if node.text != 'CONTROLLER' and int(node.text) > 0:
 						node.text = str(int(node.text) - 1)
-
 					elif node.text != 'CONTROLLER' and int(node.text) == 0:
 						node.text = '1'
-
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 
-				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
-				
+				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+				odl_comm(params =("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return old_xml
 
 def fix_change_flow(node, dictionary):
 	node_dec = int(node, 16)
-
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
 
 	for flow_id in dictionary:
 		resp2_xml = dictionary[flow_id]
@@ -124,12 +149,9 @@ def fix_change_flow(node, dictionary):
 		for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 			root2.remove(node)
 
-		result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-		
-		conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-		headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-		conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
-
+		data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+		headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+		odl_comm(params =("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return
 
 #NOT WORKING with OvS 2.5.2 (doesn't implement meter features)
@@ -219,18 +241,7 @@ def add_meter(node, rate):
 def change_idletimeout(node, seconds):
 
 	node_dec = int(node, 16)
-	
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-
-	conn = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
-	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
-	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", headers = headers)
-
-	r1 = conn.getresponse()
-	resp_xml = r1.read()
+	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	flow_id = None
 	timeout = str(seconds)
 
@@ -241,40 +252,23 @@ def change_idletimeout(node, seconds):
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
 
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
-				r2 = conn2.getresponse()
-				resp2_xml = r2.read()
+				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}idle-timeout'):
 					node.text = timeout
-
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 
-				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
+				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return
 
 def fix_idletimeout(node):
 	
 	node_dec = int(node, 16)
-	
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-
-	conn = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
-	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
-	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", headers = headers)
-
-	r1 = conn.getresponse()
-	resp_xml = r1.read()
+	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	flow_id = None
 
 	root = ET.fromstring(resp_xml)
@@ -283,41 +277,23 @@ def fix_idletimeout(node):
 		for subchild in child:
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
-				r2 = conn2.getresponse()
-				resp2_xml = r2.read()
+				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}idle-timeout'):
 					node.text = str(0)
-
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 
-				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
+				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return
 
 def change_hardtimeout(node, seconds):
 
 	node_dec = int(node, 16)
-	
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-
-	conn = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
-	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
-	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", headers = headers)
-
-	r1 = conn.getresponse()
-	resp_xml = r1.read()
+	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	flow_id = None
 	timeout = str(seconds)
 
@@ -327,41 +303,23 @@ def change_hardtimeout(node, seconds):
 		for subchild in child:
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
-				r2 = conn2.getresponse()
-				resp2_xml = r2.read()
+				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}hard-timeout'):
 					node.text = timeout
-
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 
-				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
+				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return
 
 def fix_hardtimeout(node):
-
 	node_dec = int(node, 16)
-	
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-
-	conn = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
-	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
-	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", headers = headers)
-
 	r1 = conn.getresponse()
-	resp_xml = r1.read()
+	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	flow_id = None
 
 	root = ET.fromstring(resp_xml)
@@ -370,40 +328,24 @@ def fix_hardtimeout(node):
 		for subchild in child:
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
-				r2 = conn2.getresponse()
-				resp2_xml = r2.read()
+				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}hard-timeout'):
 					node.text = str(0)
-
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 
-				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
+				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return
 
+# It stores current data in old_xml dictionary, deletes table, 
+# waits two seconds, and checks if data was deleted
 def delete_flow(node):
 	node_dec = int(node, 16)
-
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-
-	conn = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
-	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
-	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", headers = headers)
-	r1 = conn.getresponse()
-
-	resp_xml = r1.read()
+	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	flow_id = None
 	old_xml = {}
 
@@ -413,53 +355,23 @@ def delete_flow(node):
 		for subchild in child:
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
-
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
-				r2 = conn2.getresponse()
-				resp2_xml = r2.read()
+				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
 				old_xml[flow_id] = resp2_xml
+				print flow_id
+	
+	headers2 = {'Accept' : 'application/xml', 'Content-type' : 'application/xml', 'Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+	odl_comm(params = ('DELETE', "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"), headers = headers2)
 
-				root2 = ET.fromstring(resp2_xml)
-
-				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
-					root2.remove(node)
-
-				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-				
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
-				r2 = conn2.getresponse()
-				resp2_xml = r2.read()
-
-				time.sleep(2)
-
-				conn3 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-				conn3.request("DELETE", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers2)
-				r3 = conn3.getresponse()
-				resp3_xml = r3.read()
-
-				time.sleep(2)
-
-
+	time.sleep(2)
+	
+	deleted_data = odl_comm(params = ('GET', "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
+	if 'error' not in deleted_data:
+		print 'WARNING: maybe table was not deleted'
 	return old_xml
 
 def change_inport(node):
 	node_dec = int(node, 16)
-
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-
-	conn = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
-	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
-	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0", headers = headers)
-	r1 = conn.getresponse()
-
-	resp_xml = r1.read()
+	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	flow_id = None
 	old_xml = {}
 
@@ -470,10 +382,7 @@ def change_inport(node):
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
 
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				conn2.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), headers = headers)
-				r2 = conn2.getresponse()
-				resp2_xml = r2.read()
+				resp2_xml = odl_comm(params=("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
 				old_xml[flow_id] = resp2_xml
 				root2 = ET.fromstring(resp2_xml)
 
@@ -495,21 +404,13 @@ def change_inport(node):
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 
-				result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-				
-				conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-				conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
-				
+				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return old_xml
 
 def fix_change_inport(node, dictionary):
 	node_dec = int(node, 16)
-
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
 
 	for flow_id in dictionary:
 		resp2_xml = dictionary[flow_id]
@@ -518,28 +419,16 @@ def fix_change_inport(node, dictionary):
 		for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 			root2.remove(node)
 
-		result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+		data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
 		
-		conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-		headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-		conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id), body = result, headers = headers2)
-
+		headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+		odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return
 
 def delete_lldp_flow(node):
 	node_dec = int(node, 16)
 
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-
-	conn = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
-	headers = { 'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Authorization' : 'Basic %s' %  userAndPass }
-	conn.request("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0", headers = headers)
-	r1 = conn.getresponse()
-
-	resp_xml = r1.read()
+	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0"))
 	old_xml = resp_xml
 	flow_id = None
 	root = ET.fromstring(resp_xml)
@@ -556,25 +445,17 @@ def delete_lldp_flow(node):
 
 		for node in child.iter('{urn:opendaylight:flow:statistics}flow-statistics'):
 			child.remove(node)
-
 	for child in root.findall('{urn:opendaylight:flow:table:statistics}flow-table-statistics'):
 		root.remove(child)	
 
-	result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '')
+	data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '')
 
-	conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-	conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0", body = result, headers = headers2)
-
+	headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+	odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0"), body = data, headers = headers2)
 	return old_xml
 
 def fix_delete_lldp_flow(node, old_xml):
 	node_dec = int(node, 16)
-
-	config = ConfigParser.ConfigParser()
-	config.read('./config')
-	ip = config.get('main','Ip')
-	userAndPass = base64.b64encode(b"admin:admin").decode("ascii")
 
 	flow_id = None
 	root = ET.fromstring(old_xml)
@@ -586,10 +467,8 @@ def fix_delete_lldp_flow(node, old_xml):
 	for child in root.findall('{urn:opendaylight:flow:table:statistics}flow-table-statistics'):
 		root.remove(child)	
 
-	result = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '')
+	data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '')
 
-	conn2 = httplib.HTTPConnection(ip, 8181, timeout=10000)
-	headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  userAndPass }
-	conn2.request("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0", body = result, headers = headers2)
-
+	headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+	odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0"), body = data, headers = headers2)
 	return

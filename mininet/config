@@ -1,13 +1,13 @@
 [main]
-Ip = 172.18.0.1
+Ip = 172.18.0.2
 Distribution = equal
 Seed = None
 MainSwitches = 20
 Datacenters = 2
 MinutesRunning = 30
-Batch = 2
+Batch = 1
 FailuresType = 0
 ErrorInterval = 20
 CollectorInterval = 10
 [extra1]
-Number = 2
+Number = 1

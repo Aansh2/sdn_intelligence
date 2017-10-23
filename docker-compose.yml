@@ -1,0 +1,22 @@
+version: '3'
+services:
+  opendaylight:
+    image: registry.cluster.gsi.dit.upm.es/sdn/opendaylight/opendaylight:boronSR2
+    container_name: opendaylight
+    ports:
+     - "6633:6633"
+     - "8181:8181"
+     - "8101:8101"
+  mininet:
+    image: registry.cluster.gsi.dit.upm.es/sdn/network-simulator/mininet:carbon
+    container_name: mininet
+    depends_on:
+     - opendaylight
+    tty: true
+    privileged: true
+    environment:
+     - DISPLAY
+     - TERM
+    volumes:
+     - /tmp/.X11-unix:/tmp/.X11-unix
+     - /lib/modules:/lib/modules

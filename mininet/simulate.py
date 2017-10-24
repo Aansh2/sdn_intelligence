@@ -22,7 +22,7 @@ if __name__ == '__main__':
 	for n in range(nm_simulations):
 		print "Simulation %d" % (n+1)
 		# Dividing, in order to do round robin over the
-		# list_errors list and the seed_list in case it 
+		# list_errors list and the seed_list in case it (list_errors list)
 		# is shorter than the number of simulations
 		div = int(math.floor(n/ln_errors))
 		div2 = int(math.floor(n/ln_seed))

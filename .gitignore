@@ -1,3 +1,6 @@
 *.pyc
 **/test.py
 **/random_general_test.py
+**/random_errors_test.py
+/mininet/net/vlc.sh
+/mininet/net/vlc_send.sh

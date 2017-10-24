@@ -1,3 +1,2 @@
 #/bin/bash
-
-vlc ./net/samples/small.mp4 --sout ':udp{mux=ts,dst=}'
+vlc -vvv -R --network-caching 200 rtsp://10.0.0.1:8554/

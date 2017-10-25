@@ -7,7 +7,6 @@ import logging
 import json
 import time
 import os
-import test
 
 error_dictionary = {1: {'err_type': '1', 'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}}
 error_dictionary[2] = {'err_type': '2', 'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {'Timestamp': ''}}
@@ -33,7 +32,7 @@ error_dictionary['9f'] = {'err_type': '9', 'Desc': 'A hard-timeout has been aded
 error_dictionary['10f'] = {'err_type': '10', 'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary['11f'] = {'err_type': '11', 'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
 
-# Send error and fix reports
+# Sends error and fix reports
 def send_report(err, parameters, sim_id, logger):
 	error_report = error_dictionary.get(err)
 	error_report['Params'] = parameters
@@ -106,7 +105,8 @@ def config_push(node):
 				resp2_xml = odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return
 
-
+# It stores current data in the old_xml dictionary, and
+# changes the output node for each flow of the table 0
 def change_flow(node):
 	node_dec = int(node, 16)
 	resp_xml = odl_comm(params = ('GET', "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
@@ -137,26 +137,14 @@ def change_flow(node):
 				odl_comm(params =("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return old_xml
 
-def fix_change_flow(node, dictionary):
-	node_dec = int(node, 16)
-
-	for flow_id in dictionary:
-		resp2_xml = dictionary[flow_id]
-		root2 = ET.fromstring(resp2_xml)
-
-		for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
-			root2.remove(node)
-
-		data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-		headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
-		odl_comm(params =("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
-	return
-
+# It stores current data in the old_xml dictionary, and
+# puts a new idle-timeout for each flow of the table 0
 def change_idletimeout(node, seconds):
 
 	node_dec = int(node, 16)
 	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	flow_id = None
+	old_xml = {}
 	timeout = str(seconds)
 
 	root = ET.fromstring(resp_xml)
@@ -167,6 +155,7 @@ def change_idletimeout(node, seconds):
 				flow_id = subchild.text
 
 				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
+				old_xml[flow_id] = resp2_xml
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}idle-timeout'):
@@ -177,38 +166,16 @@ def change_idletimeout(node, seconds):
 				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
 				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
 				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
-	return
+	return old_xml
 
-def fix_idletimeout(node):
-	
-	node_dec = int(node, 16)
-	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
-	flow_id = None
-
-	root = ET.fromstring(resp_xml)
-
-	for child in root.findall('{urn:opendaylight:flow:inventory}flow'):
-		for subchild in child:
-			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
-				flow_id = subchild.text
-				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
-				root2 = ET.fromstring(resp2_xml)
-
-				for node in root2.iter('{urn:opendaylight:flow:inventory}idle-timeout'):
-					node.text = str(0)
-				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
-					root2.remove(node)
-
-				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
-				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
-	return
-
+# It stores current data in the old_xml dictionary, and
+# puts a new hard-timeout for each flow of the table 0
 def change_hardtimeout(node, seconds):
 
 	node_dec = int(node, 16)
 	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	flow_id = None
+	old_xml = {}
 	timeout = str(seconds)
 
 	root = ET.fromstring(resp_xml)
@@ -218,6 +185,7 @@ def change_hardtimeout(node, seconds):
 			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
 				flow_id = subchild.text
 				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
+				old_xml[flow_id] = resp2_xml
 				root2 = ET.fromstring(resp2_xml)
 
 				for node in root2.iter('{urn:opendaylight:flow:inventory}hard-timeout'):
@@ -228,33 +196,9 @@ def change_hardtimeout(node, seconds):
 				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
 				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
 				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
-	return
+	return old_xml
 
-def fix_hardtimeout(node):
-	node_dec = int(node, 16)
-	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
-	flow_id = None
-
-	root = ET.fromstring(resp_xml)
-
-	for child in root.findall('{urn:opendaylight:flow:inventory}flow'):
-		for subchild in child:
-			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
-				flow_id = subchild.text
-				resp2_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
-				root2 = ET.fromstring(resp2_xml)
-
-				for node in root2.iter('{urn:opendaylight:flow:inventory}hard-timeout'):
-					node.text = str(0)
-				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
-					root2.remove(node)
-
-				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
-				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
-	return
-
-# It stores current data in old_xml dictionary, deletes the table, 
+# It stores current data in old_xml dictionary, deletes table, 
 # waits two seconds, and checks if data was deleted
 def delete_flow(node):
 	node_dec = int(node, 16)
@@ -281,6 +225,8 @@ def delete_flow(node):
 		print 'WARNING: maybe table was not deleted'
 	return old_xml
 
+# It stores current data in old_xml dictionary, and changes 
+# the in-port of each flow of the table 0 a node
 def change_inport(node):
 	node_dec = int(node, 16)
 	resp_xml = odl_comm(params = ("GET", "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
@@ -321,22 +267,8 @@ def change_inport(node):
 				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return old_xml
 
-def fix_change_inport(node, dictionary):
-	node_dec = int(node, 16)
-
-	for flow_id in dictionary:
-		resp2_xml = dictionary[flow_id]
-		root2 = ET.fromstring(resp2_xml)
-
-		for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
-			root2.remove(node)
-
-		data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
-		
-		headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
-		odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
-	return
-
+# It stores current data in old_xml, finds flows with
+# a '35020' (LLDP package) match, and puts the 'drop' action
 def delete_lldp_flow(node):
 	node_dec = int(node, 16)
 
@@ -366,7 +298,9 @@ def delete_lldp_flow(node):
 	odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0"), body = data, headers = headers2)
 	return old_xml
 
-def fix_delete_lldp_flow(node, old_xml):
+# Given a 'table' xml, this function pushes it
+# to a node
+def fix_node_table(node, old_xml):
 	node_dec = int(node, 16)
 
 	flow_id = None
@@ -383,4 +317,21 @@ def fix_delete_lldp_flow(node, old_xml):
 
 	headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
 	odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/table/0"), body = data, headers = headers2)
+	return
+
+# Given a dictionary of 'flow' xmls, it pushes each flow
+# separately into the node
+def fix_node_flow(node, dictionary):
+	node_dec = int(node, 16)
+
+	for flow_id, odl_xml in dictionary.iteritems():
+		root2 = ET.fromstring(odl_xml)
+
+		for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
+			root2.remove(node)
+
+		data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+		
+		headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+		odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return

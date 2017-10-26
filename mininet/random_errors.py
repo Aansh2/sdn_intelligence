@@ -268,7 +268,7 @@ def change_inport(node):
 	return old_xml
 
 # It stores current data in old_xml, finds flows with
-# a '35020' (LLDP package) match, and puts the 'drop' action
+# a '35020' (LLDP package) match, and sets up the 'drop' action
 def delete_lldp_flow(node):
 	node_dec = int(node, 16)
 

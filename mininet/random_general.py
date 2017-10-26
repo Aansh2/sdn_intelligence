@@ -19,7 +19,7 @@ from mininet.cli import CLI
 from mininet.clean import cleanup
 from mininet.node import OVSSwitch
 
-#Randomize bw of access link
+# Randomize bw of access link
 def random_access(self, link_type="equal"):
 	type_id = 0
 
@@ -49,7 +49,7 @@ def random_access(self, link_type="equal"):
 	bw_table = [3, 10, 20, 50, 300]
 	return bw_table[type_id]
 
-#Join networks
+# Join networks
 def join_networks(main_network, extra_networks, namespace, link_type):
 	main = main_network
 	main_switches = main.switches()
@@ -249,9 +249,10 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 		random_errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 	elif err == 5:
-		#DEBUGGING: NOT DATACENTERS = 0
-		#INCLUDING DATACENTERS AS HOSTS
-		if datac != 0:
+		if datac <= 0:
+			print 'No datacenters in the network!'
+			print '  Error 5 shuts down a host in a datacenter'
+		else:
 			print 'Error %d' % err
 			hosts_list = net.hosts
 			host_down = hosts_list[random.randint(1, datac*3)]
@@ -261,7 +262,7 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 
 			links_list = net.links
 			for link in links_list:
-				if ('h11' + '-' in str(link.intf1)) or ('h11' + '-' in str(link.intf2)):
+				if (host_down.name + '-' in str(link.intf1)) or (host_down.name + '-' in str(link.intf2)):
 					deleted_links.append(link)
 					print link
 					net.configLinkStatus(str(link.intf1.node), str(link.intf2.node), 'down')
@@ -270,7 +271,6 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 
 			time.sleep(err_int)
 			print 'Fixing host down error...'
-
 			for deleted in deleted_links:
 				net.configLinkStatus(str(deleted.intf1.node), str(deleted.intf2.node), 'up')
 			print 'Fixed'
@@ -405,19 +405,24 @@ def run(topo, ip, config, config2, pred_error, err_int = 10):
 	net.start()
 	net.pingAll()
 
-	#Usually MainHosts is zero
+	# DEBUGGING: MainHosts is zero
 	nm_ho_sf = 0
 	datac = int(config.get('main','Datacenters'))
 
 	#All datacenters will activate their servers
+	scenario = config.get('main', 'StreamingScenario')
 	for n in range(nm_ho_sf+1, nm_ho_sf+datac*3+1):
 		h = net.get('h{}'.format(n))
 		h.cmd('./net/server.sh &')
 		h.cmd('./net/streaming_server.sh &')
 		h.cmd('./net/mail_listen_receive.sh &')
 		h.cmd('./net/mail_listen_send.sh &')
-		if n == 1:
+	if 'Yes' in scenario:
+		for n in range(nm_ho_sf, nm_ho_sf+datac):
+			h = net.get('h{}'.format(n*3+1))
 			h.cmd('./net/vlc_send.sh &')
+	elif 'No' not in scenario:
+		print '		I could not understand the "StreamingScenario" field '
 
 	#nm_ho is the number of hosts (incuding datacenters) in the network
 	nm_ho = nm_ho_sf + datac*3

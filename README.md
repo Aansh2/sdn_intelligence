@@ -36,6 +36,7 @@ network. "No" otherwise.
 - FailuresType: type of failures you want to simulate in your network
 - ErrorInterval: amount of seconds between the execution of two failures
 - CollectorInterval: " " " " two events of data mining
+- StreamingScenario: choose if you want to build a unicast rtp/rtsp streaming scenario
 
 It also will have another section for each extra network.
 
@@ -62,6 +63,8 @@ FailuresType = 0,5
 ErrorInterval = 20
 
 CollectorInterval = 10
+
+StreamingScenario = No
 
 [extra1]
 

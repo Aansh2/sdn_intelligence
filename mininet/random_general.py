@@ -1,7 +1,7 @@
 import random
 import sys
 import random_scalefree
-import random_errors_test as random_errors
+import random_errors
 import ConfigParser
 import time
 import logging
@@ -133,6 +133,19 @@ def create_traffic(net, datac, nm_ho, temp = False):
         randip_ho = '10.0.0.' + str(random.randint(datac + 1, nm_ho))
 
         if temp is True:
+        	# For testing purposes only
+        	'''
+            traffic = {
+                    0: 'iperf -c ' + randip_datac + ' -t 60 &',
+                    1: 'iperf -c ' + randip_datac + ' -t 60 &',
+                    2: 'iperf -c ' + randip_datac + ' -t 60 &',
+                    3: 'iperf -c ' + randip_datac + ' -t 60 &',
+                    4: 'iperf -c ' + randip_datac + ' -t 60 &',
+                    5: 'iperf -c ' + randip_datac + ' -t 60 &',
+                    6: 'iperf -c ' + randip_datac + ' -t 60 &'
+            }
+            '''
+            
             traffic = {
                     0: ' ',
                     1: './net/mail_receive.sh ' + randip_datac + ' temp' + ' &',
@@ -156,7 +169,6 @@ def create_traffic(net, datac, nm_ho, temp = False):
         print "			Command type : " + str(x)
         h.cmd(str(traffic.get(x, ' ')))
         print "			 Done"
-        time.sleep(0.5)
 
     #DEBUGGING: leaving out broadcast
     print "		End of iteration"
@@ -192,9 +204,8 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 
 	elif err == 2:
 		print 'Error %d ' % err
-		for n in range(0, 3):
+		for n in range(0, 10):
 			print '		 Iteration %d' % (n+1)
-			time.sleep(1)
 			create_traffic(net, datac, nm_ho, temp=True)
 
 		random_errors.send_report(err, {'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -417,6 +428,7 @@ def run(topo, ip, config, config2, pred_error, err_int = 10):
 		h.cmd('./net/streaming_server.sh &')
 		h.cmd('./net/mail_listen_receive.sh &')
 		h.cmd('./net/mail_listen_send.sh &')
+		h.cmd('iperf -s &')
 	if 'Yes' in scenario:
 		for n in range(nm_ho_sf, nm_ho_sf+datac):
 			h = net.get('h{}'.format(n*3+1))
@@ -460,7 +472,6 @@ def run(topo, ip, config, config2, pred_error, err_int = 10):
 	for switch in switches_list:
 		random_errors.config_push(switch.dpid)
 	
-	CLI(net)
 	print "Giving time for the collector to catch up..."
 	time.sleep(25)
 
@@ -471,11 +482,13 @@ def run(topo, ip, config, config2, pred_error, err_int = 10):
 	while (now_timestamp - orig_timestamp).total_seconds() < minutes*60:
 		time.sleep(err_int)
 		if pred_error != 0:
-			err = pred_error
-			create_error(err, nm_ho, datac, net, sim_id, logger, cont, err_int)
+			if (pred_error == 2 || pred_error == 1):
+				print '1 and 2 errors not supported for the time being'
+				break
+			create_error(pred_error, nm_ho, datac, net, sim_id, logger, cont, err_int)
 		else:
-			err = random.randint(1,11)
-			create_error(err, nm_ho, datac, net, sim_id, logger, cont, err_int)
+			# Excluding traffic errors (1 and 2) for the time being
+			create_error(random.randint(3,11), nm_ho, datac, net, sim_id, logger, cont, err_int)
 		now_timestamp = datetime.now()
 
 	logger.info(sim_id + " stop")

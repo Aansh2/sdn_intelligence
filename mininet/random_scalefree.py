@@ -1,6 +1,5 @@
 import networkx as nx
 import random
-
 from mininet.topo import Topo
 from mininet.net import Mininet
 

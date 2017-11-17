@@ -198,7 +198,7 @@ def change_hardtimeout(node, seconds):
 				odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return old_xml
 
-# It stores current data in old_xml dictionary, deletes table, 
+# It stores current data in old_xml dictionary, deletes table (except LLDP flows), 
 # waits two seconds, and checks if data was deleted
 def delete_flow(node):
 	node_dec = int(node, 16)

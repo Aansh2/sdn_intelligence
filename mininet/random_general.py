@@ -133,6 +133,16 @@ def create_traffic(net, datac, nm_ho, temp = False):
         randip_ho = '10.0.0.' + str(random.randint(datac + 1, nm_ho))
 
         if temp is True:
+        	traffic = {
+                    0: ' ',
+                    1: './net/mail_receive.sh ' + randip_datac + ' temp' + ' &',
+                    2: './net/mail_send.sh ' + randip_datac + ' temp' +  ' &',
+                    3: './net/small_send.sh ' + randip_ho + ' temp' +  ' &',
+                    4: './net/send.sh ' + randip_ho + ' temp' +  ' &',
+                    5: './net/streaming_client.sh ' + randip_datac + ' temp' +  ' &',
+                    6: './net/server_connect.sh ' + randip_datac + ' temp' +  ' &'
+            }
+
         	# For testing purposes only
         	'''
             traffic = {
@@ -145,16 +155,6 @@ def create_traffic(net, datac, nm_ho, temp = False):
                     6: 'iperf -c ' + randip_datac + ' -t 60 &'
             }
             '''
-            
-            traffic = {
-                    0: ' ',
-                    1: './net/mail_receive.sh ' + randip_datac + ' temp' + ' &',
-                    2: './net/mail_send.sh ' + randip_datac + ' temp' +  ' &',
-                    3: './net/small_send.sh ' + randip_ho + ' temp' +  ' &',
-                    4: './net/send.sh ' + randip_ho + ' temp' +  ' &',
-                    5: './net/streaming_client.sh ' + randip_datac + ' temp' +  ' &',
-                    6: './net/server_connect.sh ' + randip_datac + ' temp' +  ' &'
-            }
 
         else:
          	traffic = {
@@ -170,10 +170,9 @@ def create_traffic(net, datac, nm_ho, temp = False):
         h.cmd(str(traffic.get(x, ' ')))
         print "			 Done"
 
-    #DEBUGGING: leaving out broadcast
     print "		End of iteration"
     return
-
+# Creates an error in the network according to a number given
 def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 10):
 	#DEBUGGING I'm supposing zero hosts in the main network
 	host = random.randint(datac*3+1, nm_ho)
@@ -221,15 +220,18 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 	elif err == 3:
 		print 'Error %d' % err
 		links_list = net.links
-		link_down = links_list[random.randint(0, len(links_list)-1)]
+		# Beginning in 1 instead of 0, because 0 is loopback
+		link_down = links_list[random.randint(1, len(links_list)-1)]
 		print 'link down: %s - %s' % (link_down.intf1, link_down.intf2)
-
-		net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf2.node), "down")
+		while not random_errors.check_pass():
+			time.sleep(0.25)
 		random_errors.send_report(err, {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2), 'Timestamp': str(datetime.now())}, sim_id, logger)
+		net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf2.node), "down")
 
 		time.sleep(err_int)
 		print "Fixing link down"
-	
+		while not random_errors.check_pass():
+			time.sleep(0.25)
 		net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf2.node), "up")
 		print 'Fixed'
 		random_errors.send_report(str(err)+'f', {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -241,18 +243,18 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 		switch_down = net.switches[random.randint(0, len(switches_list)-1)]
 		print 'switch down: %s' % switch_down.name
 		while not random_errors.check_pass():
-			time.sleep(0.5)
+			time.sleep(0.25)
 
 		name = str(switch_down.name.replace('s', ''))
+		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		old_xml = random_errors.delete_flow(switch_down.dpid)
 		old_lldp = random_errors.delete_lldp_flow(switch_down.dpid)
 
-		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		time.sleep(err_int)
 		print 'Fixing switch down error...'
 		
 		while not random_errors.check_pass():
-			time.sleep(0.5)
+			time.sleep(0.25)
 		
 		random_errors.fix_node_table(switch_down.dpid, old_lldp)
 		random_errors.fix_node_flow(switch_down.dpid, old_xml)
@@ -265,13 +267,14 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 			print '  Error 5 shuts down a host in a datacenter'
 		else:
 			print 'Error %d' % err
-			hosts_list = net.hosts
-			host_down = hosts_list[random.randint(1, datac*3)]
+			host_down = net.get("h"+ str(random.randint(1, datac*3)))
 			print 'host down: pid: %s name: %s' % (host_down.pid, host_down.name)
 
 			deleted_links = []
 
 			links_list = net.links
+			while not random_errors.check_pass():
+				time.sleep(0.25)
 			for link in links_list:
 				if (host_down.name + '-' in str(link.intf1)) or (host_down.name + '-' in str(link.intf2)):
 					deleted_links.append(link)
@@ -282,6 +285,8 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 
 			time.sleep(err_int)
 			print 'Fixing host down error...'
+			while not random_errors.check_pass():
+				time.sleep(0.25)
 			for deleted in deleted_links:
 				net.configLinkStatus(str(deleted.intf1.node), str(deleted.intf2.node), 'up')
 			print 'Fixed'
@@ -293,15 +298,15 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 		switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'switch whose flow has been modified: %s' % switch_flow.dpid
 		while not random_errors.check_pass():
-			time.sleep(0.5)		
+			time.sleep(0.25)		
+		random_errors.send_report(err, {'Switch': str(int(switch_flow.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		dictionary = random_errors.change_flow(switch_flow.dpid)
 
-		random_errors.send_report(err, {'Switch': str(int(switch_flow.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		time.sleep(err_int)
 		print 'Fixing modified flows error...'
 
 		while not random_errors.check_pass():
-			time.sleep(0.5)
+			time.sleep(0.25)
 		random_errors.fix_node_flow(switch_flow.dpid, dictionary)
 		print 'Fixed'
 		random_errors.send_report(str(err) + 'f', {'Switch': str(int(switch_flow.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -312,13 +317,13 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'Switch whose in-ports have been messed: %s' % switch_down.dpid
 		while not random_errors.check_pass():
-			time.sleep(0.5)	
-		old_inports = random_errors.change_inport(switch_down.dpid)
+			time.sleep(0.25)
 		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+		old_inports = random_errors.change_inport(switch_down.dpid)
 		time.sleep(err_int)
 		print 'Fixing in-ports error...'
 		while not random_errors.check_pass():
-			time.sleep(0.5)	
+			time.sleep(0.25)
 		random_errors.fix_node_flow(switch_down.dpid, old_inports)
 		print 'Fixed'
 		random_errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -327,22 +332,22 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 		print 'Error %d' % err
 		switches_list = net.switches
 		seconds = random.randint(1, 5)
-		print 'Idle-timeout has been added with %d seconds' % seconds
+		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+		print 'Switch %s: idle-timeout has been added with %d seconds' % (switch_down.name, seconds)
 		dictionary = {}
-		for switch_down in switches_list:
-			while not random_errors.check_pass():
-				time.sleep(0.5)	
-			old_xml = random_errors.change_idletimeout(switch_down.dpid, seconds)
-			dictionary[switch_down.dpid] = old_xml
 
+		while not random_errors.check_pass():
+			time.sleep(0.25)	
 		random_errors.send_report(err, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
+		old_xml = random_errors.change_idletimeout(switch_down.dpid, seconds)
+		dictionary[switch_down.dpid] = old_xml
 
 		time.sleep(err_int)
 		print 'Fixing idle-timeout error...'
 
 		for key, value in dictionary.iteritems():
 			while not random_errors.check_pass():
-				time.sleep(0.5)	
+				time.sleep(0.25)	
 			random_errors.fix_node_flow(key, value)
 		print 'Fixed'
 		random_errors.send_report(str(err)+'f', {'Time': str(0), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -350,23 +355,24 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 	elif err == 9:
 		print 'Error %d' % err
 		switches_list = net.switches
-		seconds = random.randint(10, 15)
-		print 'Hard-timeout has been added with %d seconds' % seconds
+		seconds = random.randint(30, 60)
+		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+		print 'Switch %s: hard-timeout has been added with %d seconds' % (switch_down.name, seconds)
 		dictionary = {}
-		for switch_down in switches_list:
-			while not random_errors.check_pass():
-				time.sleep(0.5)	
-			old_xml = random_errors.change_hardtimeout(switch_down.dpid, seconds)
-			dictionary[switch_down.dpid] = old_xml
-
+		
+		while not random_errors.check_pass():
+			time.sleep(0.25)	
 		random_errors.send_report(err, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
+		old_xml = random_errors.change_hardtimeout(switch_down.dpid, seconds)
+		dictionary[switch_down.dpid] = old_xml
+
 				
 		time.sleep(err_int)
 		print 'Fixing hard-timeout error...'
 
 		for key, value in dictionary.iteritems():
 			while not random_errors.check_pass():
-				time.sleep(0.5)	
+				time.sleep(0.25)	
 			random_errors.fix_node_flow(key, value)
 		print 'Fixed'
 		random_errors.send_report(str(err)+'f', {'Time': str(0), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -378,14 +384,14 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 		print 'Switch whose flows have been deleted: %s' % switch_down.dpid
 
 		while not random_errors.check_pass():
-			time.sleep(0.5)
+			time.sleep(0.25)
+		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		old_xml = random_errors.delete_flow(switch_down.dpid)
 
-		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		time.sleep(err_int)
 		print 'Fixing deleted flows error...'
 		while not random_errors.check_pass():
-			time.sleep(0.5)	
+			time.sleep(0.25)	
 		random_errors.fix_node_flow(switch_down.dpid, old_xml)
 		print 'Fixed'
 		random_errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -396,13 +402,13 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 		print 'Switch that will drop its lldp packages: %s' % switch_down.dpid
 		while not random_errors.check_pass():
-			time.sleep(0.5)	
+			time.sleep(0.25)	
 		old_xml = random_errors.delete_lldp_flow(switch_down.dpid)
 		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		time.sleep(err_int)
 		print 'Fixing lldp error...'
 		while not random_errors.check_pass():
-			time.sleep(0.5)	
+			time.sleep(0.25)	
 		random_errors.fix_node_table(switch_down.dpid, old_xml)
 		print 'Fixed'
 		random_errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -433,6 +439,8 @@ def run(topo, ip, config, config2, pred_error, err_int = 10):
 		for n in range(nm_ho_sf, nm_ho_sf+datac):
 			h = net.get('h{}'.format(n*3+1))
 			h.cmd('./net/vlc_send.sh &')
+			# XTERM any host to connect vlc to the datacenter
+			CLI(net)
 	elif 'No' not in scenario:
 		print '		I could not understand the "StreamingScenario" field '
 
@@ -482,7 +490,7 @@ def run(topo, ip, config, config2, pred_error, err_int = 10):
 	while (now_timestamp - orig_timestamp).total_seconds() < minutes*60:
 		time.sleep(err_int)
 		if pred_error != 0:
-			if (pred_error == 2 || pred_error == 1):
+			if (pred_error == 2 or pred_error == 1):
 				print '1 and 2 errors not supported for the time being'
 				break
 			create_error(pred_error, nm_ho, datac, net, sim_id, logger, cont, err_int)

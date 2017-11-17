@@ -48,16 +48,16 @@ RUN chmod +x mininet/util/install.sh
 RUN mininet/util/install.sh -a
 
 # This part is optional: updating openvswitch
-RUN apt-get -y remove openvswitch-common openvswitch-pki openvswitch-switch
-WORKDIR /tmp
-RUN wget http://openvswitch.org/releases/openvswitch-2.8.1.tar.gz \
- && tar zxvf openvswitch-2.8.1.tar.gz 
+#RUN apt-get -y remove openvswitch-common openvswitch-pki openvswitch-switch
+#WORKDIR /tmp
+#RUN wget http://openvswitch.org/releases/openvswitch-2.8.1.tar.gz \
+# && tar zxvf openvswitch-2.8.1.tar.gz 
 
-WORKDIR /tmp/openvswitch-2.8.1
-RUN ./configure --prefix=/usr --with-linux=/lib/modules/`uname -r`/build \
- && make \
- && make install \
- && make modules_install 
+#WORKDIR /tmp/openvswitch-2.8.1
+#RUN ./configure --prefix=/usr --with-linux=/lib/modules/`uname -r`/build \
+# && make \
+# && make install \
+# && make modules_install 
 # End
 
 WORKDIR /root

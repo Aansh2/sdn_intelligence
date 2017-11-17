@@ -2,13 +2,13 @@
 Ip = 172.18.0.2
 Distribution = equal
 Seed = None
-MainSwitches = 20
+MainSwitches = 10
 Datacenters = 2
-MinutesRunning = 30
+MinutesRunning = 40
 Batch = 1
 FailuresType = 0
 ErrorInterval = 20
-CollectorInterval = 10
+CollectorInterval = 9
 StreamingScenario = No
 [extra1]
 Number = 1

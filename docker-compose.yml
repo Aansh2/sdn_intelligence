@@ -1,7 +1,7 @@
 version: '3'
 services:
   opendaylight:
-    image: registry.cluster.gsi.dit.upm.es/sdn/opendaylight/opendaylight:boronSR2
+    image: registry.cluster.gsi.dit.upm.es/sdn/opendaylight/opendaylight:carbon
     container_name: opendaylight
     ports:
      - "6633:6633"

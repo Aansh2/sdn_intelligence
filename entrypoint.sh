@@ -9,7 +9,7 @@ update_openvswitch()
 }
 
 sed -i 's/geteuid/getppid/' /usr/bin/vlc
-update_openvswitch
+#update_openvswitch
 service openvswitch-switch start
 ovs-vsctl set-manager ptcp:6640
 

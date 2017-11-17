@@ -17,7 +17,7 @@ error_dictionary[6] = {'err_type': '6', 'Desc': 'All flows (except the CONTROLLE
 error_dictionary[7] = {'err_type': '7', 'Desc': 'All flow entries of a switch have changed their in-port match (if they have one)', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary[8] = {'err_type': '8', 'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary[9] = {'err_type': '9', 'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
-error_dictionary[10] = {'err_type': '10', 'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary[10] = {'err_type': '10', 'Desc': 'Flow priorities have been changed', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary[11] = {'err_type': '11', 'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
 
 error_dictionary['1f'] = {'err_type': '1', 'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}
@@ -29,7 +29,7 @@ error_dictionary['6f'] = {'err_type': '6', 'Desc': 'All flows (except the CONTRO
 error_dictionary['7f'] = {'err_type': '7', 'Desc': 'All flow entries of a switch have changed their in-port match (if they have one)', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary['8f'] = {'err_type': '8', 'Desc': 'An idle-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary['9f'] = {'err_type': '9', 'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
-error_dictionary['10f'] = {'err_type': '10', 'Desc': 'All flow entries (except one, the statistics flow entry) of a switch have been deleted', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary['10f'] = {'err_type': '10', 'Desc': 'Flow priorities have been changed', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary['11f'] = {'err_type': '11', 'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
 
 # Sends error and fix reports
@@ -104,6 +104,39 @@ def config_push(node):
 				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
 				resp2_xml = odl_comm(params = ("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return
+
+# It stores current data in the old_xml dictionary, and
+# changes the priority of each flow
+def change_priority(node):
+	node_dec = int(node, 16)
+	resp_xml = odl_comm(params = ('GET', "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
+	old_xml = {}
+	flow_id = None
+	alternate_priorities = 0
+
+	root = ET.fromstring(resp_xml)
+
+	for child in root.findall('{urn:opendaylight:flow:inventory}flow'):
+		for subchild in child:
+			if subchild.tag == "{urn:opendaylight:flow:inventory}id" and '#UF' not in subchild.text:
+				flow_id = subchild.text
+				resp2_xml = odl_comm(params = ('GET', "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
+				old_xml[flow_id] = resp2_xml
+				root2 = ET.fromstring(resp2_xml)
+
+				node = root2.find('{urn:opendaylight:flow:inventory}priority')
+				if alternate_priorities == 0:
+					node.text = '100'
+				else:
+					node.text = '0'
+				alternate_priorities =  alternate_priorities ^ 1
+				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
+					root2.remove(node)
+
+				data = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' + ET.tostring(root2).replace('ns0:', '').replace('ns1:', '').replace(':ns0', '').replace(':ns1', '').replace(' xmlns="urn:opendaylight:flow:statistics"', '')
+				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
+				odl_comm(params =("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
+	return old_xml
 
 # It stores current data in the old_xml dictionary, and
 # changes the output node for each flow of the table 0

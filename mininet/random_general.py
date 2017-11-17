@@ -381,15 +381,14 @@ def create_error(err, nm_ho, datac, net, sim_id, logger, controller, err_int = 1
 		print 'Error %d' % err
 		switches_list = net.switches
 		switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-		print 'Switch whose flows have been deleted: %s' % switch_down.dpid
-
+		print 'Switch whose flows priorities have changed: %s' % switch_down.dpid
 		while not random_errors.check_pass():
 			time.sleep(0.25)
 		random_errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-		old_xml = random_errors.delete_flow(switch_down.dpid)
+		old_xml = random_errors.change_priority(switch_down.dpid)
 
 		time.sleep(err_int)
-		print 'Fixing deleted flows error...'
+		print 'Fixing priorities error...'
 		while not random_errors.check_pass():
 			time.sleep(0.25)	
 		random_errors.fix_node_flow(switch_down.dpid, old_xml)

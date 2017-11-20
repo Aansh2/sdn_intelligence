@@ -112,7 +112,6 @@ def change_priority(node):
 	resp_xml = odl_comm(params = ('GET', "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0"))
 	old_xml = {}
 	flow_id = None
-	alternate_priorities = 0
 
 	root = ET.fromstring(resp_xml)
 
@@ -123,13 +122,8 @@ def change_priority(node):
 				resp2_xml = odl_comm(params = ('GET', "/restconf/operational/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)))
 				old_xml[flow_id] = resp2_xml
 				root2 = ET.fromstring(resp2_xml)
-
 				node = root2.find('{urn:opendaylight:flow:inventory}priority')
-				if alternate_priorities == 0:
-					node.text = '100'
-				else:
-					node.text = '0'
-				alternate_priorities =  alternate_priorities ^ 1
+				node.text = str(random.randint(1,100))
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 

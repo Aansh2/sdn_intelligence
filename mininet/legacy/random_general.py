@@ -18,6 +18,7 @@ from mininet.link import TCLink
 from mininet.cli import CLI
 from mininet.clean import cleanup
 from mininet.node import OVSSwitch
+from mininet.log import setLogLevel
 
 # Randomize bw of access link
 def random_access(self, link_type="equal"):
@@ -142,19 +143,6 @@ def create_traffic(net, datac, nm_ho, temp = False):
                     5: './net/streaming_client.sh ' + randip_datac + ' temp' +  ' &',
                     6: './net/server_connect.sh ' + randip_datac + ' temp' +  ' &'
             }
-
-        	# For testing purposes only
-        	'''
-            traffic = {
-                    0: 'iperf -c ' + randip_datac + ' -t 60 &',
-                    1: 'iperf -c ' + randip_datac + ' -t 60 &',
-                    2: 'iperf -c ' + randip_datac + ' -t 60 &',
-                    3: 'iperf -c ' + randip_datac + ' -t 60 &',
-                    4: 'iperf -c ' + randip_datac + ' -t 60 &',
-                    5: 'iperf -c ' + randip_datac + ' -t 60 &',
-                    6: 'iperf -c ' + randip_datac + ' -t 60 &'
-            }
-            '''
 
         else:
          	traffic = {
@@ -418,6 +406,7 @@ def run(topo, ip, config, config2, pred_error, err_int = 10):
 
 	cont = RemoteController('c1', ip=ip, port=6633)
 	net = Mininet(topo=topo, link=TCLink, controller=cont)
+	setLogLevel("debug")
 	net.start()
 	net.pingAll()
 

@@ -477,7 +477,7 @@ class Simulation():
 		elif err == 8:
 			print 'Error %d' % err
 			switches_list = self.net.switches
-			seconds = random.randint(1, 5)
+			seconds = random.randint(3, 6)
 			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			print 'Switch %s: idle-timeout has been added with %d seconds' % (switch_down.name, seconds)
 			dictionary = {}
@@ -501,7 +501,7 @@ class Simulation():
 		elif err == 9:
 			print 'Error %d' % err
 			switches_list = self.net.switches
-			seconds = random.randint(30, 60)
+			seconds = random.randint(60, 90)
 			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			print 'Switch %s: hard-timeout has been added with %d seconds' % (switch_down.name, seconds)
 			dictionary = {}

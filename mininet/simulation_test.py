@@ -445,22 +445,22 @@ class Simulation():
 		elif err == 6:
 			print 'Error %d' % err
 			switches_list = self.net.switches
-			switch_flow = switches_list[random.randint(0, len(switches_list)-1)]
+			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			switch_down = self.net.get('s2')
-			print 'switch whose flow has been modified: %s' % switch_flow.dpid
+			print 'switch whose flow has been modified: %s' % switch_down.dpid
 			while not errors.check_pass():
 				time.sleep(0.25)		
-			errors.send_report(err, {'Switch': str(int(switch_flow.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			dictionary = errors.change_flow(switch_flow.dpid)
+			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			dictionary = errors.change_flow(switch_down.dpid)
 
 			time.sleep(error_interval)
 			print 'Fixing modified flows error...'
 
 			while not errors.check_pass():
 				time.sleep(0.25)
-			errors.fix_node_flow(switch_flow.dpid, dictionary)
+			errors.fix_node_flow(switch_down.dpid, dictionary)
 			print 'Fixed'
-			errors.send_report(str(err) + 'f', {'Switch': str(int(switch_flow.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 		elif err == 7:
 			print 'Error %d' % err

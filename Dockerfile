@@ -12,7 +12,7 @@ COPY mininet .
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-#   sudo \
+    sudo \
     iproute2 \
 #   linux-headers-`uname -r` \
     iputils-ping \

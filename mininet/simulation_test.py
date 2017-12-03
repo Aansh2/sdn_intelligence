@@ -259,16 +259,16 @@ class Simulation():
 		now_timestamp = datetime.now()
 
 		while (now_timestamp - orig_timestamp).total_seconds() < minutes*60:
-			time.sleep(error_interval)
+			time.sleep(error_interval*2)
 			if predefined_error != 0:
 				if (predefined_error == 2 or predefined_error == 1):
 					print '1 and 2 errors not supported for the time being'
 					break
-				self.create_error(predefined_error, nm_ho, datac, net, sim_id, logger, error_interval)
+				self.create_error(predefined_error, nm_ho, datac, sim_id, logger, error_interval)
 			else:
 				# Excluding traffic errors (1 and 2) for the time being
 				# Checking error 3 ...
-				self.create_error(random.randint(4,11), nm_ho, datac, net, sim_id, logger, error_interval)
+				self.create_error(random.randint(4,11), nm_ho, datac, sim_id, logger, error_interval)
 			now_timestamp = datetime.now()
 
 		logger.info(sim_id + " stop")
@@ -398,7 +398,7 @@ class Simulation():
 			name = str(switch_down.name.replace('s', ''))
 			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			old_xml = errors.delete_flow(switch_down.dpid)
-			old_lldp = errors.delete_lldp_flow(switch_down.dpid)
+			#old_lldp = errors.delete_lldp_flow(switch_down.dpid)
 
 			time.sleep(error_interval)
 			print 'Fixing switch down error...'
@@ -406,7 +406,7 @@ class Simulation():
 			while not errors.check_pass():
 				time.sleep(0.25)
 			
-			errors.fix_node_table(switch_down.dpid, old_lldp)
+			#errors.fix_node_table(switch_down.dpid, old_lldp)
 			errors.fix_node_flow(switch_down.dpid, old_xml)
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)

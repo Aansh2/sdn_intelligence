@@ -150,12 +150,13 @@ def change_flow(node):
 				old_xml[flow_id] = resp2_xml
 				root2 = ET.fromstring(resp2_xml)
 
-				#DEBUGGING: Change CONTROLLER too?
 				for node in root2.iter('{urn:opendaylight:flow:inventory}output-node-connector'):
 					if node.text != 'CONTROLLER' and int(node.text) > 0:
 						node.text = str(int(node.text) - 1)
 					elif node.text != 'CONTROLLER' and int(node.text) == 0:
 						node.text = '1'
+					elif: node.text == 'CONTROLLER':
+						node.text = '0'
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
 

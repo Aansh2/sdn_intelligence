@@ -155,7 +155,7 @@ def change_flow(node):
 						node.text = str(int(node.text) - 1)
 					elif node.text != 'CONTROLLER' and int(node.text) == 0:
 						node.text = '1'
-					elif: node.text == 'CONTROLLER':
+					elif node.text == 'CONTROLLER':
 						node.text = '0'
 				for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):
 					root2.remove(node)
@@ -353,6 +353,7 @@ def fix_node_flow(node, dictionary):
 	node_dec = int(node, 16)
 
 	for flow_id, odl_xml in dictionary.iteritems():
+		time.sleep(2)
 		root2 = ET.fromstring(odl_xml)
 
 		for node in root2.findall('{urn:opendaylight:flow:statistics}flow-statistics'):

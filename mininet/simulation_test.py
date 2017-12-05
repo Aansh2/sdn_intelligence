@@ -417,6 +417,11 @@ class Simulation():
 				print '  Error 5 shuts down a host in a datacenter'
 			else:
 				print 'Error %d' % err
+
+				host_list = []
+				for i in range(datac*3):
+					host_list.append(self.net.get("h"+str(i+1)))
+
 				host_down = self.net.get("h"+ str(random.randint(1, datac*3)))
 				print 'host down: pid: %s name: %s' % (host_down.pid, host_down.name)
 
@@ -439,6 +444,9 @@ class Simulation():
 					time.sleep(0.25)
 				for deleted in deleted_links:
 					self.net.configLinkStatus(str(deleted.intf1.node), str(deleted.intf2.node), 'up')
+				time.sleep(1)
+				print host_list
+				self.net.ping(host_list)
 				print 'Fixed'
 				errors.send_report(str(err)+'f', {'Host': host_down.name, 'Timestamp': str(datetime.now())}, sim_id, logger)
 

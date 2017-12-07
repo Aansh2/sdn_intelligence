@@ -258,6 +258,7 @@ class Simulation():
 		minutes = int(self.config.get('main', 'MinutesRunning'))
 		now_timestamp = datetime.now()
 
+		counter = 4
 		while (now_timestamp - orig_timestamp).total_seconds() < minutes*60:
 			time.sleep(error_interval*2)
 			if predefined_error != 0:
@@ -268,7 +269,14 @@ class Simulation():
 			else:
 				# Excluding traffic errors (1 and 2) for the time being
 				# Checking error 3 ...
-				self.create_error(random.randint(4,11), nm_ho, datac, sim_id, logger, error_interval)
+				self.create_error(random.randint(4,12), nm_ho, datac, sim_id, logger, error_interval)
+				'''
+				self.create_error(counter, nm_ho, datac, sim_id, logger, error_interval)
+				if counter + 1 == 13:
+					counter = 4
+				else:
+					counter += 1
+				'''
 			now_timestamp = datetime.now()
 
 		logger.info(sim_id + " stop")
@@ -466,6 +474,7 @@ class Simulation():
 
 			while not errors.check_pass():
 				time.sleep(0.25)
+
 			errors.fix_node_flow(switch_down.dpid, dictionary)
 			print 'Fixed'
 			errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -574,7 +583,29 @@ class Simulation():
 			errors.fix_node_table(switch_down.dpid, old_xml)
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+
+		elif err == 12:
+
+			print 'Error %d' % err
+			switches_list = self.net.switches
+			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+			switch_down = self.net.get('s2')
+			print 'Switch whose outport and inport have been modified: %s' % switch_down.dpid
+			while not errors.check_pass():
+				time.sleep(0.25)		
+			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			dictionary = errors.change_flow(switch_down.dpid)
+			time.sleep(4)
+			errors.change_inport(switch_down.dpid)
 			
+			time.sleep(error_interval)
+			print 'Fixing error 12...'
+			while not errors.check_pass():
+				time.sleep(0.25)
+			errors.fix_node_flow(switch_down.dpid, dictionary)
+			print 'Fixed'
+			errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+
 		return
 
 

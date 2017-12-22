@@ -328,7 +328,6 @@ class Simulation():
 			ip_datac = '10.0.0.' + str(server)
 		else:
 			ip_datac = '0.0.0.0'
-
 		if err == 1:
 			print 'Error %d in host %s' % (err, host)
 			for n in range(0, 6):
@@ -336,80 +335,63 @@ class Simulation():
 				print '		 Iteration %d' % (n+1)
 				h = net.get('h{}'.format(host))
 				h.cmd('./net/streaming_client.sh ' + ip_datac + ' temp' +  ' &')
-
 			errors.send_report(err, {'Host': 'h{}'.format(host), 'Timestamp': str(datetime.now())}, sim_id, logger)
-
 			if error_interval < 60:
 				time.sleep(60)
 			else:
 				time.sleep(error_interval)
 			print "Fixed traffic-consuming host error"
-
 			errors.send_report(str(err)+'f', {'Host': 'h{}'.format(host), 'Timestamp': str(datetime.now())}, sim_id, logger)
-
 		elif err == 2:
 			print 'Error %d ' % err
 			for n in range(0, 10):
 				print '		 Iteration %d' % (n+1)
 				self.create_traffic(datac, nm_ho, temp=True)
-
 			errors.send_report(err, {'Timestamp': str(datetime.now())}, sim_id, logger)
-
 			if error_interval < 60:
 				time.sleep(60)
 			else:
 				time.sleep(error_interval)
 			print "Fixed general traffic error"
-
 			errors.send_report(str(err) +'f', {'Timestamp': str(datetime.now())}, sim_id, logger)
 
 		elif err == 3:
 			print 'Error %d' % err
 			links_list = self.net.links
 			# Beginning in 1 instead of 0, because 0 is loopback
-			link_down = links_list[random.randint(1, len(links_list)-1)]
+			#link_down = links_list[random.randint(1, len(links_list)-1)]
 			switch_down = self.net.get('s2')
 			links_list = switch_down.intfs
 			link_down = links_list[random.randint(1, len(links_list)-1)].link
 			print 'link down: %s - %s' % (link_down.intf1, link_down.intf2)
-			while not errors.check_pass():
-				time.sleep(0.25)
 			errors.send_report(err, {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			self.net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf2.node), "down")
-
 			time.sleep(error_interval)
 			print "Fixing link down"
-			while not errors.check_pass():
-				time.sleep(0.25)
 			self.net.configLinkStatus(str(link_down.intf1.node), str(link_down.intf2.node), "up")
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2), 'Timestamp': str(datetime.now())}, sim_id, logger)
 
 		elif err == 4:
 			print 'Error %d' % err
-
 			switches_list = self.net.switches
-			switch_down = self.net.switches[random.randint(0, len(switches_list)-1)]
+			#switch_down = self.net.switches[random.randint(0, len(switches_list)-1)]
 			switch_down = self.net.get('s2')
 			print 'switch down: %s' % switch_down.name
-			while not errors.check_pass():
-				time.sleep(0.25)
-
+			logger.info(sim_id + ' pause')
 			name = str(switch_down.name.replace('s', ''))
 			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			old_xml = errors.delete_flow(switch_down.dpid)
 			#old_lldp = errors.delete_lldp_flow(switch_down.dpid)
-
+			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing switch down error...'
-			
-			while not errors.check_pass():
-				time.sleep(0.25)
-			
+			logger.info(sim_id  + ' pause')
 			#errors.fix_node_table(switch_down.dpid, old_lldp)
 			errors.fix_node_flow(switch_down.dpid, old_xml)
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			logger.info(sim_id + ' play')
 
 		elif err == 5:
 			if datac <= 0:
@@ -417,31 +399,24 @@ class Simulation():
 				print '  Error 5 shuts down a host in a datacenter'
 			else:
 				print 'Error %d' % err
-
 				host_list = []
 				for i in range(datac*3):
 					host_list.append(self.net.get("h"+str(i+1)))
-
 				host_down = self.net.get("h"+ str(random.randint(1, datac*3)))
 				print 'host down: pid: %s name: %s' % (host_down.pid, host_down.name)
-
 				deleted_links = []
-
 				links_list = self.net.links
-				while not errors.check_pass():
-					time.sleep(0.25)
+				logger.info(sim_id + ' pause')
 				for link in links_list:
 					if (host_down.name + '-' in str(link.intf1)) or (host_down.name + '-' in str(link.intf2)):
 						deleted_links.append(link)
 						print link
 						self.net.configLinkStatus(str(link.intf1.node), str(link.intf2.node), 'down')
-
 				errors.send_report(err, {'Host': host_down.name, 'Timestamp': str(datetime.now())}, sim_id, logger)
-
+				logger.info(sim_id + ' play')
 				time.sleep(error_interval)
 				print 'Fixing host down error...'
-				while not errors.check_pass():
-					time.sleep(0.25)
+				logger.info(sim_id + ' pause')
 				for deleted in deleted_links:
 					self.net.configLinkStatus(str(deleted.intf1.node), str(deleted.intf2.node), 'up')
 				time.sleep(1)
@@ -449,132 +424,125 @@ class Simulation():
 				self.net.ping(host_list)
 				print 'Fixed'
 				errors.send_report(str(err)+'f', {'Host': host_down.name, 'Timestamp': str(datetime.now())}, sim_id, logger)
+				logger.info(sim_id + ' play')
 
 		elif err == 6:
 			print 'Error %d' % err
-			switches_list = self.net.switches
-			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+			#switches_list = self.net.switches
+			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			switch_down = self.net.get('s2')
 			print 'switch whose flow has been modified: %s' % switch_down.dpid
-			while not errors.check_pass():
-				time.sleep(0.25)		
+			logger.info(sim_id + ' pause')
 			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			dictionary = errors.change_flow(switch_down.dpid)
-
+			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing modified flows error...'
-
-			while not errors.check_pass():
-				time.sleep(0.25)
+			logger.info(sim_id + ' pause')
 			errors.fix_node_flow(switch_down.dpid, dictionary)
 			print 'Fixed'
 			errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			logger.info(sim_id + ' play')
 
 		elif err == 7:
 			print 'Error %d' % err
-			switches_list = self.net.switches
-			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+			#switches_list = self.net.switches
+			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			switch_down = self.net.get('s2')
 			print 'Switch whose in-ports have been messed: %s' % switch_down.dpid
-			while not errors.check_pass():
-				time.sleep(0.25)
+			logger.info(sim_id + ' pause')
 			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			old_inports = errors.change_inport(switch_down.dpid)
+			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing in-ports error...'
-			while not errors.check_pass():
-				time.sleep(0.25)
+			logger.info(sim_id + ' pause')
 			errors.fix_node_flow(switch_down.dpid, old_inports)
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			logger.info(sim_id + ' play')
+
 
 		elif err == 8:
 			print 'Error %d' % err
-			switches_list = self.net.switches
+			#switches_list = self.net.switches
 			seconds = random.randint(1, 5)
-			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			switch_down = self.net.get('s2')
 			print 'Switch %s: idle-timeout has been added with %d seconds' % (switch_down.name, seconds)
 			dictionary = {}
-
-			while not errors.check_pass():
-				time.sleep(0.25)	
+			logger.info(sim_id + ' pause')	
 			errors.send_report(err, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			old_xml = errors.change_idletimeout(switch_down.dpid, seconds)
 			dictionary[switch_down.dpid] = old_xml
-
+			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing idle-timeout error...'
-
+			logger.info(sim_id + ' pause')
 			for key, value in dictionary.iteritems():
-				while not errors.check_pass():
-					time.sleep(0.25)	
 				errors.fix_node_flow(key, value)
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Time': str(0), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			logger.info(sim_id + ' play')
 
 		elif err == 9:
 			print 'Error %d' % err
-			switches_list = self.net.switches
+			#switches_list = self.net.switches
 			seconds = random.randint(30, 60)
-			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			switch_down = self.net.get('s2')
 			print 'Switch %s: hard-timeout has been added with %d seconds' % (switch_down.name, seconds)
 			dictionary = {}
-			
-			while not errors.check_pass():
-				time.sleep(0.25)	
+			logger.info(sim_id + ' pause')
 			errors.send_report(err, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			old_xml = errors.change_hardtimeout(switch_down.dpid, seconds)
 			dictionary[switch_down.dpid] = old_xml
-					
+			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing hard-timeout error...'
-
+			logger.info(sim_id + ' pause')
 			for key, value in dictionary.iteritems():
-				while not errors.check_pass():
-					time.sleep(0.25)	
 				errors.fix_node_flow(key, value)
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Time': str(0), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			logger.info(sim_id + ' play')
 
 		elif err == 10:
 			print 'Error %d' % err
-			switches_list = self.net.switches
-			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+			#switches_list = self.net.switches
+			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			switch_down = self.net.get('s2')
 			print 'Switch whose flows priorities have changed: %s' % switch_down.dpid
-			while not errors.check_pass():
-				time.sleep(0.25)
+			logger.info(sim_id + ' pause')	
 			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			old_xml = errors.change_priority(switch_down.dpid)
-
+			logger.info(sim_id + ' play')	
 			time.sleep(error_interval)
 			print 'Fixing priorities error...'
-			while not errors.check_pass():
-				time.sleep(0.25)	
+			logger.info(sim_id + ' pause')	
 			errors.fix_node_flow(switch_down.dpid, old_xml)
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			logger.info(sim_id + ' play')	
 
 		elif err == 11:
 			print 'Error %d' % err
-			switches_list = self.net.switches
-			switch_down = switches_list[random.randint(0, len(switches_list)-1)]
+			#switches_list = self.net.switches
+			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
 			switch_down = self.net.get('s2')
 			print 'Switch that will drop its lldp packages: %s' % switch_down.dpid
-			while not errors.check_pass():
-				time.sleep(0.25)	
+			logger.info(sim_id + ' pause')
 			old_xml = errors.delete_lldp_flow(switch_down.dpid)
 			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			logger.info(sim_id + ' play')	
 			time.sleep(error_interval)
 			print 'Fixing lldp error...'
-			while not errors.check_pass():
-				time.sleep(0.25)	
+			logger.info(sim_id + ' pause')
 			errors.fix_node_table(switch_down.dpid, old_xml)
 			print 'Fixed'
 			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			
+			logger.info(sim_id + ' play')	
+
 		return
 
 

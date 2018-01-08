@@ -19,6 +19,7 @@ error_dictionary[8] = {'err_type': '8', 'Desc': 'An idle-timeout has been aded t
 error_dictionary[9] = {'err_type': '9', 'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary[10] = {'err_type': '10', 'Desc': 'Flow priorities have been changed', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary[11] = {'err_type': '11', 'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary[12] = {'err_type': '12', 'Desc': 'Both inport and output node connector were changed', 'Params': {'Switch': '', 'Timestamp': ''}}
 
 error_dictionary['1f'] = {'err_type': '1', 'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}
 error_dictionary['2f'] = {'err_type': '2', 'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {'Timestamp': ''}}
@@ -31,6 +32,7 @@ error_dictionary['8f'] = {'err_type': '8', 'Desc': 'An idle-timeout has been ade
 error_dictionary['9f'] = {'err_type': '9', 'Desc': 'A hard-timeout has been aded to the flows of all switches', 'Params': {'Time': '', 'Timestamp': ''}}
 error_dictionary['10f'] = {'err_type': '10', 'Desc': 'Flow priorities have been changed', 'Params': {'Switch': '', 'Timestamp': ''}}
 error_dictionary['11f'] = {'err_type': '11', 'Desc': 'All lldp packages reaching this switch will be dropped', 'Params': {'Switch': '', 'Timestamp': ''}}
+error_dictionary['12f'] = {'err_type': '12', 'Desc': 'Both inport and output node connector were changed', 'Params': {'Switch': '', 'Timestamp': ''}}
 
 # Sends error and fix reports
 def send_report(err, parameters, sim_id, logger):
@@ -164,7 +166,7 @@ def change_flow(node):
 				headers2 = { 'Content-type' : 'application/yang.data+xml','Authorization' : 'Basic %s' %  str(base64.b64encode(b"admin:admin").decode("ascii")) }
 				odl_comm(params =("PUT", "/restconf/config/opendaylight-inventory:nodes/node/openflow:"+str(node_dec)+"/flow-node-inventory:table/0/flow/"+str(flow_id)), body = data, headers = headers2)
 	return old_xml
-
+	
 # It stores current data in the old_xml dictionary, and
 # puts a new idle-timeout for each flow of the table 0
 def change_idletimeout(node, seconds):

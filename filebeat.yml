@@ -21,6 +21,8 @@ filebeat.prospectors:
   # Change to true to enable this prospector configuration.
   enabled: true
   scan_frequency: 1s
+  close_inactive: 7m
+  max_backoff: 1.5s
 
   # Paths that should be crawled and fetched. Glob based paths.
   paths:

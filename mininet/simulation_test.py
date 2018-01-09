@@ -453,15 +453,8 @@ class Simulation():
 			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing modified flows error...'
-<<<<<<< HEAD
 			logger.info(sim_id + ' pause')
-			time.sleep(3)			
-=======
-
-			while not errors.check_pass():
-				time.sleep(0.25)
-
->>>>>>> 2108b85f30769fc569423fbf0a80cd942f99497b
+			time.sleep(3)
 			errors.fix_node_flow(switch_down.dpid, dictionary)
 			print 'Fixed'
 			errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)

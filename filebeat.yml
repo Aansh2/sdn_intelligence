@@ -22,7 +22,7 @@ filebeat.prospectors:
   enabled: true
   scan_frequency: 1s
   close_inactive: 7m
-  max_backoff: 1.5s
+  max_backoff: 1s
 
   # Paths that should be crawled and fetched. Glob based paths.
   paths:

@@ -2,6 +2,7 @@ import networkx as nx
 import random
 from mininet.topo import Topo
 
+
 # Creates a random scale-free network scheme
 class RandomScaleFree(Topo):
 

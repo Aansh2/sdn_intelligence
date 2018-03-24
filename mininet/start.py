@@ -2,7 +2,6 @@ import ConfigParser
 import simulation
 import os
 import math
-import socket
 
 if __name__ == '__main__':
 

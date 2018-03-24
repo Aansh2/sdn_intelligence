@@ -35,6 +35,8 @@ error_dictionary['11f'] = {'err_type': '11', 'Desc': 'All lldp packages reaching
 error_dictionary['12f'] = {'err_type': '12', 'Desc': 'Outputs and in-ports from a switch have been changed', 'Params': {'Switch': '', 'Timestamp': ''}}
 
 error_dictionary['ok'] = {'err_type': 'ok', 'Desc': 'Everything is ok', 'Params': {'Timestamp': ''}}
+error_dictionary['buffer'] = {'err_type': 'buffer', 'Desc': 'Buffer', 'Params': {'Timestamp': ''}}
+
 
 # Sends error and fix reports
 def send_report(err, parameters, sim_id, logger):

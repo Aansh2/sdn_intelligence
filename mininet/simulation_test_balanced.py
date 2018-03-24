@@ -260,7 +260,8 @@ class Simulation():
 
 		counter = 4
 		while (now_timestamp - orig_timestamp).total_seconds() < minutes*60:
-			time.sleep(error_interval*2)
+			errors.send_report('buffer', {'Timestamp': str(datetime.now())}, sim_id, logger)
+			time.sleep(error_interval)
 			if predefined_error != 0:
 				if (predefined_error == 2 or predefined_error == 1):
 					print '1 and 2 errors not supported for the time being'
@@ -342,7 +343,7 @@ class Simulation():
 			for n in range(0, 6):
 				time.sleep(0.5)
 				print '		 Iteration %d' % (n+1)
-				h = net.get('h{}'.format(host))
+				h = self.net.get('h{}'.format(host))
 				h.cmd('./net/streaming_client.sh ' + ip_datac + ' temp' +  ' &')
 
 			errors.send_report(err, {'Host': 'h{}'.format(host), 'Timestamp': str(datetime.now())}, sim_id, logger)

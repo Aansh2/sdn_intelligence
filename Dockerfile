@@ -12,7 +12,7 @@ COPY mininet .
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-#   sudo \
+    sudo \
     iproute2 \
 #   linux-headers-`uname -r` \
     iputils-ping \
@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && pip install -I networkx==1.11 \
  && pip install matplotlib
 
-RUN ln -s /usr/src/linux-headers-`uname -r`/ /lib/modules/`uname -r`/build
+#RUN ln -s /usr/src/linux-headers-`uname -r`/ /lib/modules/`uname -r`/build
 RUN git config --global url.https://github.com/.insteadOf git://github.com/
 RUN git clone https://github.com/mininet/mininet
 WORKDIR /root/mininet

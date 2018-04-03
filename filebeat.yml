@@ -6,7 +6,7 @@
 #
 # You can find the full configuration reference here:
 # https://www.elastic.co/guide/en/beats/filebeat/index.html
-
+filebeat.idle_timeout: 1s
 
 #=========================== Filebeat prospectors =============================
 
@@ -20,6 +20,11 @@ filebeat.prospectors:
 
   # Change to true to enable this prospector configuration.
   enabled: true
+  # scan_frecuency: 1s
+  # ignore_older: 30m
+  # close_inactive: 10m
+  max_backoff: 1s
+  backoff: 0.5s
 
   # Paths that should be crawled and fetched. Glob based paths.
   paths:

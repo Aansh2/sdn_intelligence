@@ -3,6 +3,12 @@ import simulation
 import os
 import math
 
+"""
+Start script. 
+
+__author__ = "GSI"
+"""
+
 if __name__ == '__main__':
 
 	config = ConfigParser.ConfigParser()

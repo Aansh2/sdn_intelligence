@@ -20,6 +20,11 @@ from mininet.clean import cleanup
 from mininet.node import OVSSwitch
 from mininet.log import setLogLevel
 
+"""
+***TEST SCRIPT*** 
+
+__author__ = "GSI"
+"""
 
 class Simulation():
 

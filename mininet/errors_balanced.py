@@ -7,6 +7,11 @@ import logging
 import json
 import time
 import os
+"""
+***TEST SCRIPT*** 
+
+__author__ = "GSI"
+"""
 
 error_dictionary = {1: {'err_type': '1', 'Desc': 'A host is doing heavy use of the network by requiring a lot of streaming traffic ', 'Params': {'Host': '', 'Timestamp': ''}}}
 error_dictionary[2] = {'err_type': '2', 'Desc': 'All hosts are doing heavy use of the network by requiring a lot of all sorts of traffic','Params': {'Timestamp': ''}}

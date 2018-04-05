@@ -2,6 +2,11 @@ import networkx as nx
 import random
 from mininet.topo import Topo
 
+"""
+RandomScaleFree class. Creates the network topology.
+
+__author__ = "GSI"
+"""
 
 # Creates a random scale-free network scheme
 class RandomScaleFree(Topo):

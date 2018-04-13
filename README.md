@@ -13,7 +13,7 @@ sudo docker exec -ti mininet bash
 Once in the mininet CLI, change the config and repo_subnet files according to your preferences (see examples below), and execute simulate.py:
 
 ```sh
-py start.py
+python start.py
 ```
 Once running, it will create a failure in the network every 5 seconds (it could be more, if the execution of the failure takes more than 5 secondss)
 To end its execution, press ctrl+c

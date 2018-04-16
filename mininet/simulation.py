@@ -354,6 +354,10 @@ class Simulation(object):
 	def create_error(self, err, nm_ho, datac, sim_id, logger, error_interval = 10):
 		#DEBUGGING I'm supposing zero hosts in the main network
 		host = random.randint(datac*3+1, nm_ho)
+		config = ConfigParser.ConfigParser()
+		config.read(['./config'])
+		switch = self.config.get('main', 'Switch')
+		node = self.net.get(str(switch))
 		
 		if datac > 0:
 			server = random.randint(1, datac*3)
@@ -392,8 +396,7 @@ class Simulation(object):
 			links_list = self.net.links
 			# Beginning in 1 instead of 0, because 0 is loopback
 			#link_down = links_list[random.randint(1, len(links_list)-1)]
-			switch_down = self.net.get('s2')
-			links_list = switch_down.intfs
+			links_list = node.intfs
 			link_down = links_list[random.randint(1, len(links_list)-1)].link
 			print 'link down: %s - %s' % (link_down.intf1, link_down.intf2)
 			errors.send_report(err, {'Interface 1': str(link_down.intf1), 'Interface 2': str(link_down.intf2), 'Timestamp': str(datetime.now())}, sim_id, logger)
@@ -408,12 +411,11 @@ class Simulation(object):
 			print 'Error %d' % err
 			switches_list = self.net.switches
 			#switch_down = self.net.switches[random.randint(0, len(switches_list)-1)]
-			switch_down = self.net.get('s2')
-			print 'switch down: %s' % switch_down.name
+			print 'switch down: %s' % node.name
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			old_xml = errors.delete_flow(switch_down.dpid)
+			errors.send_report(err, {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			old_xml = errors.delete_flow(node.dpid)
 			#old_lldp = errors.delete_lldp_flow(switch_down.dpid)
 			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
@@ -421,9 +423,9 @@ class Simulation(object):
 			logger.info(sim_id  + ' pause')
 			time.sleep(4)
 			#errors.fix_node_table(switch_down.dpid, old_lldp)
-			errors.fix_node_flow(switch_down.dpid, old_xml)
+			errors.fix_node_flow(node.dpid, old_xml)
 			print 'Fixed'
-			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			errors.send_report(str(err)+'f', {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			logger.info(sim_id + ' play')
 
 		elif err == 5:
@@ -465,40 +467,38 @@ class Simulation(object):
 			print 'Error %d' % err
 			#switches_list = self.net.switches
 			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-			switch_down = self.net.get('s2')
-			print 'switch whose flow has been modified: %s' % switch_down.dpid
+			print 'switch whose flow has been modified: %s' % node.dpid
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			dictionary = errors.change_flow(switch_down.dpid)
+			errors.send_report(err, {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			dictionary = errors.change_flow(node.dpid)
 			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing modified flows error...'
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.fix_node_flow(switch_down.dpid, dictionary)
+			errors.fix_node_flow(node.dpid, dictionary)
 			print 'Fixed'
-			errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			errors.send_report(str(err) + 'f', {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			logger.info(sim_id + ' play')
 
 		elif err == 7:
 			print 'Error %d' % err
 			#switches_list = self.net.switches
 			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-			switch_down = self.net.get('s2')
-			print 'Switch whose in-ports have been messed: %s' % switch_down.dpid
+			print 'Switch whose in-ports have been messed: %s' % node.dpid
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			old_inports = errors.change_inport(switch_down.dpid)
+			errors.send_report(err, {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			old_inports = errors.change_inport(node.dpid)
 			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing in-ports error...'
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.fix_node_flow(switch_down.dpid, old_inports)
+			errors.fix_node_flow(node.dpid, old_inports)
 			print 'Fixed'
-			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			errors.send_report(str(err)+'f', {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			logger.info(sim_id + ' play')
 
 		elif err == 8:
@@ -506,14 +506,13 @@ class Simulation(object):
 			#switches_list = self.net.switches
 			seconds = random.randint(1, 5)
 			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-			switch_down = self.net.get('s2')
-			print 'Switch %s: idle-timeout has been added with %d seconds' % (switch_down.name, seconds)
+			print 'Switch %s: idle-timeout has been added with %d seconds' % (node.name, seconds)
 			dictionary = {}
 			logger.info(sim_id + ' pause')	
 			time.sleep(4)
 			errors.send_report(err, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			old_xml = errors.change_idletimeout(switch_down.dpid, seconds)
-			dictionary[switch_down.dpid] = old_xml
+			old_xml = errors.change_idletimeout(node.dpid, seconds)
+			dictionary[node.dpid] = old_xml
 			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing idle-timeout error...'
@@ -530,14 +529,13 @@ class Simulation(object):
 			#switches_list = self.net.switches
 			seconds = random.randint(30, 60)
 			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-			switch_down = self.net.get('s2')
-			print 'Switch %s: hard-timeout has been added with %d seconds' % (switch_down.name, seconds)
+			print 'Switch %s: hard-timeout has been added with %d seconds' % (node.name, seconds)
 			dictionary = {}
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
 			errors.send_report(err, {'Time': str(seconds), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			old_xml = errors.change_hardtimeout(switch_down.dpid, seconds)
-			dictionary[switch_down.dpid] = old_xml
+			old_xml = errors.change_hardtimeout(node.dpid, seconds)
+			dictionary[node.dpid] = old_xml
 			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing hard-timeout error...'
@@ -553,63 +551,60 @@ class Simulation(object):
 			print 'Error %d' % err
 			#switches_list = self.net.switches
 			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-			switch_down = self.net.get('s2')
-			print 'Switch whose flows priorities have changed: %s' % switch_down.dpid
+			print 'Switch whose flows priorities have changed: %s' % node.dpid
 			logger.info(sim_id + ' pause')	
 			time.sleep(4)
-			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			old_xml = errors.change_priority(switch_down.dpid)
+			errors.send_report(err, {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			old_xml = errors.change_priority(node.dpid)
 			logger.info(sim_id + ' play')	
 			time.sleep(error_interval)
 			print 'Fixing priorities error...'
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.fix_node_flow(switch_down.dpid, old_xml)
+			errors.fix_node_flow(node.dpid, old_xml)
 			print 'Fixed'
-			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			errors.send_report(str(err)+'f', {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			logger.info(sim_id + ' play')	
 
 		elif err == 11:
 			print 'Error %d' % err
 			#switches_list = self.net.switches
 			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-			switch_down = self.net.get('s2')
-			print 'Switch that will drop its lldp packages: %s' % switch_down.dpid
+			print 'Switch that will drop its lldp packages: %s' % node.dpid
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			old_xml = errors.delete_lldp_flow(switch_down.dpid)
-			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			old_xml = errors.delete_lldp_flow(node.dpid)
+			errors.send_report(err, {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			logger.info(sim_id + ' play')	
 			time.sleep(error_interval)
 			print 'Fixing lldp error...'
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.fix_node_table(switch_down.dpid, old_xml)
+			errors.fix_node_table(node.dpid, old_xml)
 			print 'Fixed'
-			errors.send_report(str(err)+'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			errors.send_report(str(err)+'f', {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 			logger.info(sim_id + ' play')
 
 		elif err == 12:
 			print 'Error %d' % err
 			#switches_list = self.net.switches
 			#switch_down = switches_list[random.randint(0, len(switches_list)-1)]
-			switch_down = self.net.get('s2')
-			print 'Switch whose outport and inport have been modified: %s' % switch_down.dpid
+			print 'Switch whose outport and inport have been modified: %s' % node.dpid
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.send_report(err, {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
-			dictionary = errors.change_flow(switch_down.dpid)
+			errors.send_report(err, {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			dictionary = errors.change_flow(node.dpid)
 			time.sleep(4)
-			errors.change_inport(switch_down.dpid)
+			errors.change_inport(node.dpid)
 			logger.info(sim_id + ' play')
 			time.sleep(error_interval)
 			print 'Fixing error 12...'
 			logger.info(sim_id + ' pause')
 			time.sleep(4)
-			errors.fix_node_flow(switch_down.dpid, dictionary)
+			errors.fix_node_flow(node.dpid, dictionary)
 			logger.info(sim_id + ' play')			
 			print 'Fixed'
-			errors.send_report(str(err) + 'f', {'Switch': str(int(switch_down.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
+			errors.send_report(str(err) + 'f', {'Switch': str(int(node.dpid, 16)), 'Timestamp': str(datetime.now())}, sim_id, logger)
 		return
 
 

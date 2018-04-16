@@ -67,7 +67,7 @@ COPY filebeat.yml /etc/filebeat/
 RUN mkdir ./log/
 RUN chmod 644 /etc/filebeat/filebeat.yml
 
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip==9.0.1
 RUN pip install -U pip setuptools
 EXPOSE 6640
 ENTRYPOINT ["/entrypoint.sh"]

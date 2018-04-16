@@ -10,5 +10,6 @@ FailuresType = 0
 ErrorInterval = 60
 CollectorInterval = 15
 StreamingScenario = No
+Switch = s2
 [extra1]
 Number = 1
